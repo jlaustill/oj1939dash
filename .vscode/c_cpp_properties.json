@@ -1,0 +1,58 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "/home/jlaustill/code/oj1939dash/include",
+                "/home/jlaustill/code/oj1939dash/src",
+                "/home/jlaustill/code/oj1939dash/.pio/libdeps/uno/CAN_BUS_Shield/src",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/variants/standard",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/jlaustill/code/oj1939dash/include",
+                    "/home/jlaustill/code/oj1939dash/src",
+                    "/home/jlaustill/code/oj1939dash/.pio/libdeps/uno/CAN_BUS_Shield/src",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/variants/standard",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/home/jlaustill/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=60118",
+                "ARDUINO_AVR_UNO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11",
+            "compilerPath": "/home/jlaustill/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
