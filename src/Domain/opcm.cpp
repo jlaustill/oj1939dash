@@ -4,11 +4,18 @@
 #include "opcm.h"
 #include <AppData.h>
 #include <Arduino.h>
-#include "setup.h"
+#include "Data/CumminsBus.h"
+#include "Display/Nextion.h"
 
-#ifdef FRAM
 #include "Data/fram.h"
-#endif
+
+AppData currentData;
+String serialBuffer;
+
+float roundToTwo(float var) {
+  float value = (int)(var * 100 + .5);
+  return (float)value / 100.0;
+}
 
 void opcm::newSweepValue() {
   if (up == 1 && sweep < maxSweep) {

@@ -1,7 +1,6 @@
 //
 // Created by jlaustill on 8/27/21.
 //
-#include "Configuration.h"
 
 #ifdef NEXTION
 
@@ -26,14 +25,14 @@ void Nextion::sendBatch() {
     Serial.print("Sending batch command: ");
     Serial.println(batchCmdBuffer);
 #endif
-    nexSer.print(batchCmdBuffer);
+    Serial3.print(batchCmdBuffer);
     batchCmdBuffer = "";
   }
 }
 
 void Nextion::initialize() {
-  nexSer.begin(115200);
-  while (!nexSer) {
+  Serial3.begin(115200);
+  while (!Serial3) {
     // wait for connect
   }
   sendCmd("");  // clear the buffer
