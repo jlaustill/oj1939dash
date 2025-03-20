@@ -53,15 +53,11 @@ void opcm::setup() {
 
   Serial.println("Starting up...");
 
-#ifdef FRAM
   OPCM_Fram::initialize();
-#endif
 
   CumminsBus::initialize(&currentData);
 
-#ifdef FRAM
   currentData = OPCM_Fram::loadData();
-#endif
 
   currentData.rpm = 0;
   currentData.coolantTemp = 0;
@@ -78,20 +74,7 @@ void opcm::setup() {
   currentData.throttlePercentage = 0;
   currentData.load = 0;
   currentData.fuelPressure = 0.0;
-
-#ifdef TRANSMISSION_TEMPERATURE_INPUT
-  currentData.transmissionTempC = 0;
-#endif
-#ifdef OIL_TEMPERATURE_INPUT
-  currentData.oilTempC = 0;
-#endif
-#ifdef WATER_TEMPERATURE_INPUT
-  currentData.coolantTemp2 = 0;
-#endif
-
-#ifdef NEXTION
   Nextion::initialize();
-#endif
 }
 
 void opcm::loop() {
@@ -143,14 +126,10 @@ void opcm::loop() {
 
     thisMileage = 0;
 
-#ifdef FRAM
     OPCM_Fram::saveData(&currentData);
-#endif
   }
 
-#ifdef NEXTION
   Nextion::updateDisplayData(&currentData);
-#endif
 
   lastMillis = thisMillis;
 

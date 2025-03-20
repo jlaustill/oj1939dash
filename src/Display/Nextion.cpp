@@ -2,8 +2,6 @@
 // Created by jlaustill on 8/27/21.
 //
 
-#ifdef NEXTION
-
 #include <Arduino.h>
 
 #include <cctype>
@@ -141,8 +139,8 @@ void Nextion::updateDisplayData(AppData *currentData) {
 
 void Nextion::processCommands(AppData *currentData) {
   static String serialBuffer;
-  while (nexSer.available()) {
-    int newData = nexSer.read();
+  while (Serial3.available()) {
+    int newData = Serial3.read();
     if (newData == ';') {
       Serial.println("Execute!" + serialBuffer);
       if (serialBuffer.indexOf("resetTripA") > 0) {
@@ -187,5 +185,3 @@ void Nextion::processCommands(AppData *currentData) {
     }
   }
 }
-
-#endif
