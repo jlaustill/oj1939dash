@@ -12,9 +12,9 @@
 AppData currentData;
 String serialBuffer;
 
-float roundToTwo(float var) {
-  float value = (int)(var * 100 + .5);
-  return (float)value / 100.0;
+float roundToTwo(const float var) {
+  const int value = static_cast<int>(var * 100.0f + .5f);
+  return static_cast<float>(value) / 100.0f;
 }
 
 void opcm::newSweepValue() {
@@ -40,7 +40,7 @@ long opcm::sweep = 0;
 long opcm::maxSweep = 50;
 int opcm::up = 1;
 
-long loopCountLastMillis = 0;
+unsigned long loopCountLastMillis = 0;
 
 void opcm::setup() {
   Serial.begin(115200);
@@ -76,7 +76,7 @@ void opcm::setup() {
   currentData.fuelPressure = 0.0;
   Nextion::initialize();
 }
-
+int newData = 0;
 void opcm::loop() {
   thisMillis = millis();
   thisDuration = thisMillis - lastMillis;
@@ -135,19 +135,19 @@ void opcm::loop() {
 
   if (thisMillis - loopCountLastMillis > 1000) {
     loopCountLastMillis = thisMillis;
-    Serial.println("Loop Count/Sec: " + (String)count + " Miles On Engine: " + (String)currentData.milesOnEngine + " RPM: " + (String)currentData.rpm);
+    Serial.println("Loop Count/Sec: " + static_cast<String>(count) + " Miles On Engine: " + static_cast<String>(currentData.milesOnEngine) + " RPM: " + static_cast<String>(currentData.rpm));
     count = 0;
   }
 
   while (Serial.available()) {
-    int newData = Serial.read();
+    newData = Serial.read();
     if (newData == ';') {
       Serial.println("Execute!" + serialBuffer);
       if (serialBuffer == "resetTripA") {
         Serial.println("reset trip A!");
         currentData.tripA = 0;
       } else if (serialBuffer.indexOf("setOdometer") > 0) {
-        double newOdometerReading =
+        const double newOdometerReading =
             atof(serialBuffer
                      .substring(serialBuffer.indexOf("=") + 1,
                                 serialBuffer.indexOf(";"))

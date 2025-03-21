@@ -17,48 +17,57 @@ String batchCmdBuffer = "";
 
 void Nextion::sendCmd(const String& cmd) { batchCmdBuffer += cmd + "\xFF\xFF\xFF"; }
 
-void Nextion::sendBatch() {
-  if (batchCmdBuffer.length() > 0) {
+void Nextion::sendBatch()
+{
+  if (batchCmdBuffer.length() > 0)
+  {
     Serial3.print(batchCmdBuffer);
     batchCmdBuffer = "";
   }
 }
 
-void Nextion::initialize() {
+void Nextion::initialize()
+{
   Serial3.begin(115200);
-  while (!Serial3) {
+  while (!Serial3)
+  {
     // wait for connect
   }
-  sendCmd("");  // clear the buffer
+  sendCmd(""); // clear the buffer
 }
 
-String formatNumber(const double number) {
+String formatNumber(const double number)
+{
   String finalText = "";
-  char buffer[20];  // Adjust the buffer size according to your needs
+  char buffer[20]; // Adjust the buffer size according to your needs
 
   // Convert the input number to a formatted string
   snprintf(buffer, sizeof(buffer), "%.2f", number);
 
   int numDigits = 0;
   size_t periodIndex =
-      strcspn(buffer, ".");  // Find the position of the decimal point
+    strcspn(buffer, "."); // Find the position of the decimal point
 
-  for (size_t i = 0; i < periodIndex; i++) {
-    if (isdigit(buffer[i])) {
+  for (size_t i = 0; i < periodIndex; i++)
+  {
+    if (isdigit(buffer[i]))
+    {
       numDigits++;
     }
   }
 
   // Loop through the input string and copy each number to the output string,
   // inserting commas along the way
-  for (size_t i = 0; i < periodIndex; i++) {
+  for (size_t i = 0; i < periodIndex; i++)
+  {
     finalText += buffer[i];
 
     // Decrease the distance from the decimal point
     size_t distance = numDigits - i - 1;
 
     // Insert a comma every three decimal positions away from the decimal point
-    if ((distance > 0) && (distance % 3 == 0)) {
+    if ((distance > 0) && (distance % 3 == 0))
+    {
       finalText += ',';
     }
   }
@@ -69,12 +78,13 @@ String formatNumber(const double number) {
   return finalText;
 }
 
-void Nextion::updateDisplayData(AppData *currentData) {
+void Nextion::updateDisplayData(AppData* currentData)
+{
   unsigned long currentMillis = millis();
 
   // Update the display every 100ms
-  if (currentMillis - last100msUpdate >= 100) {
-
+  if (currentMillis - last100msUpdate >= 100)
+  {
     sendCmd("mph.val=" + static_cast<String>(currentData->speedInMph));
     sendCmd("rpm.val=" + static_cast<String>(currentData->rpm));
     const String bpt = "bp.val=" + static_cast<String>(static_cast<int>(currentData->boost));
@@ -88,30 +98,31 @@ void Nextion::updateDisplayData(AppData *currentData) {
     sendCmd("reqRange.txt=\"" + static_cast<String>(currentData->requestedRange) + "\"");
     sendCmd("load.val=" + static_cast<String>(currentData->load));
     sendCmd("fuelPres.val=" + static_cast<String>(static_cast<int>(currentData->fuelPressure)));
-      
+
     sendBatch();
     last100msUpdate = currentMillis;
   }
 
   // Update slow data every 1 second
-  if (currentMillis - last1sUpdate >= 1000) {
+  if (currentMillis - last1sUpdate >= 1000)
+  {
     sendCmd("odometer.txt=\"" + formatNumber(currentData->odometer) + "\"");
     sendCmd("tripA.txt=\"" + formatNumber(currentData->tripA) + "\"");
     sendCmd("tripB.txt=\"" + formatNumber(currentData->tripB) + "\"");
     sendCmd("oc.txt=\"" + formatNumber(currentData->oilChange) + "\"");
     sendCmd("tfc.txt=\"" +
-            formatNumber(currentData->transmissionFluidChange) + "\"");
+      formatNumber(currentData->transmissionFluidChange) + "\"");
     sendCmd("tcfc.txt=\"" +
-            formatNumber(currentData->transferCaseFluidChange) + "\"");
+      formatNumber(currentData->transferCaseFluidChange) + "\"");
     sendCmd("fdfc.txt=\"" +
-            formatNumber(currentData->frontDifferentialFluidChange) + "\"");
+      formatNumber(currentData->frontDifferentialFluidChange) + "\"");
     sendCmd("rdfc.txt=\"" +
-            formatNumber(currentData->rearDifferentialFluidChange) + "\"");
+      formatNumber(currentData->rearDifferentialFluidChange) + "\"");
     sendCmd("ffc.txt=\"" + formatNumber(currentData->fuelFilterChange) +
-            "\"");
+      "\"");
     sendCmd("tr.txt=\"" + formatNumber(currentData->tireRotation) + "\"");
     sendCmd("transPres.val=" +
-            static_cast<String>(currentData->transmissionPressure));
+      static_cast<String>(currentData->transmissionPressure));
     const double coolTempF = (static_cast<double>(currentData->coolantTemp) * 9 / 5) + 32;
     sendCmd("h20t.val=" + static_cast<String>(static_cast<int>(coolTempF)));
     const double coolTemp2F = (static_cast<double>(currentData->coolantTemp2) * 9 / 5) + 32;
@@ -120,7 +131,7 @@ void Nextion::updateDisplayData(AppData *currentData) {
     sendCmd("ot.val=" + static_cast<String>(static_cast<int>(oilTempF)));
     sendCmd("fueltmp.val=" + static_cast<String>(currentData->fuelTempF));
     const double transmissionTemperateDegrees =
-        ((static_cast<double>(currentData->transmissionTempC) * 9 / 5) + 32);
+      ((static_cast<double>(currentData->transmissionTempC) * 9 / 5) + 32);
     sendCmd("trantemp.val=" + static_cast<String>(static_cast<int>(transmissionTemperateDegrees)));
     sendCmd("oilPres.val=" + static_cast<String>(static_cast<int>(currentData->oilPressureInPsi)));
 
@@ -133,50 +144,64 @@ void Nextion::updateDisplayData(AppData *currentData) {
   processCommands(currentData);
 }
 
-void Nextion::processCommands(AppData *currentData) {
+void Nextion::processCommands(AppData* currentData)
+{
   static String serialBuffer;
-  while (Serial3.available()) {
+  while (Serial3.available())
+  {
     int newData = Serial3.read();
-    if (newData == ';') {
+    if (newData == ';')
+    {
       Serial.println("Execute!" + serialBuffer);
-      if (serialBuffer.indexOf("resetTripA") > 0) {
+      if (serialBuffer.indexOf("resetTripA") > 0)
+      {
         Serial.println("reset trip A!");
         currentData->tripA = 0;
       }
-      if (serialBuffer.indexOf("resetTripB") > 0) {
+      if (serialBuffer.indexOf("resetTripB") > 0)
+      {
         Serial.println("reset trip B!");
         currentData->tripB = 0;
       }
-      if (serialBuffer.indexOf("resetOC") > 0) {
+      if (serialBuffer.indexOf("resetOC") > 0)
+      {
         Serial.println("reset Oil Change Mileage!");
         currentData->oilChange = 0;
       }
-      if (serialBuffer.indexOf("resetTFC") > 0) {
+      if (serialBuffer.indexOf("resetTFC") > 0)
+      {
         Serial.println("reset Transmission Fluid Change Mileage!");
         currentData->transmissionFluidChange = 0;
       }
-      if (serialBuffer.indexOf("resetTCFC") > 0) {
+      if (serialBuffer.indexOf("resetTCFC") > 0)
+      {
         Serial.println("reset Transfer Case Fluid Change Mileage!");
         currentData->transferCaseFluidChange = 0;
       }
-      if (serialBuffer.indexOf("resetFDFC") > 0) {
+      if (serialBuffer.indexOf("resetFDFC") > 0)
+      {
         Serial.println("reset Front Differential Fluid Change Mileage!");
         currentData->frontDifferentialFluidChange = 0;
       }
-      if (serialBuffer.indexOf("resetRDFC") > 0) {
+      if (serialBuffer.indexOf("resetRDFC") > 0)
+      {
         Serial.println("reset Rear Differential Fluid Change Mileage!");
         currentData->rearDifferentialFluidChange = 0;
       }
-      if (serialBuffer.indexOf("resetFFC") > 0) {
+      if (serialBuffer.indexOf("resetFFC") > 0)
+      {
         Serial.println("reset Fuel Filter Change Mileage!");
         currentData->fuelFilterChange = 0;
       }
-      if (serialBuffer.indexOf("resetTR") > 0) {
+      if (serialBuffer.indexOf("resetTR") > 0)
+      {
         Serial.println("reset Tire Rotation Mileage!");
         currentData->tireRotation = 0;
       }
       serialBuffer = "";
-    } else {
+    }
+    else
+    {
       serialBuffer += static_cast<char>(newData);
     }
   }

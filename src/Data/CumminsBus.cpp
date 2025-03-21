@@ -26,14 +26,15 @@ uint32_t lastJ1939Request = 0;
 
 boolean warmedUp = false;
 
-AppData *CumminsBus::appData;
+AppData* CumminsBus::appData;
 
 // methods that have been moved to the CumminsBus class
 J1939Message CumminsBus::ElectronicTransmissionController1Pgn{};
 
 // methods that need to be moved to the CumminsBus class
 volatile CanMessage pgn65262{
-    0x67, 0x8, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, 0};
+  0x67, 0x8, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, 0
+};
 volatile CanMessage pgn65262_149{};
 volatile CanMessage pgn65263{};
 volatile CanMessage pgn65263_149{};
@@ -43,21 +44,23 @@ volatile CanMessage pgn61445{};
 volatile CanMessage message256{};
 volatile CanMessage message274{};
 volatile CanMessage x67984Message{
-    0x67, 0x8, {0xFE, 0x7D, 0x7D, 0xC0, 0x1, 0xFF, 0xFF, 0xFF}, 0};
+  0x67, 0x8, {0xFE, 0x7D, 0x7D, 0xC0, 0x1, 0xFF, 0xFF, 0xFF}, 0
+};
 volatile CanMessage pgn61443{
-    0x67, 0x8, {0xF1, 0x0, 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 0};
+  0x67, 0x8, {0xF1, 0x0, 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 0
+};
 volatile CanMessage pgn65270{};
 CAN_message_t msg;
 
 // Our data, how exciting!
 volatile unsigned long RPM, FuelLongM, FuelLongR, TimingLongM, TimingLongR;
-volatile double fuelTemp;              // +
-volatile double oilPressure = 0;       // +
-volatile double waterTemp = 0;         // +
-volatile byte load = 0;                // +
-volatile byte throttlePercentage = 0;  // +
-volatile float Timing;                 // +
-volatile float FuelPercentage;         // +
+volatile double fuelTemp; // +
+volatile double oilPressure = 0; // +
+volatile double waterTemp = 0; // +
+volatile byte load = 0; // +
+volatile byte throttlePercentage = 0; // +
+volatile float Timing; // +
+volatile float FuelPercentage; // +
 
 volatile float minFuelPressure = 99999999.0;
 volatile float maxFuelPressure = 0.0;
@@ -71,12 +74,14 @@ volatile unsigned short shortTimingValue = 0;
 volatile int ids[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 volatile int idsP = 0;
 
-void updateJ1939Message(J1939Message* _messageToUpdate, const CAN_message_t& msg) {
+void updateJ1939Message(J1939Message* _messageToUpdate, const CAN_message_t& msg)
+{
   _messageToUpdate->setCanId(msg.id);
   _messageToUpdate->setData(msg.buf);
 }
 
-void updateMessage(volatile CanMessage* _messageToUpdate, const CAN_message_t& msg) {
+void updateMessage(volatile CanMessage* _messageToUpdate, const CAN_message_t& msg)
+{
   _messageToUpdate->id = msg.id;
   _messageToUpdate->length = msg.len;
   _messageToUpdate->data[0] = msg.buf[0];
@@ -90,7 +95,8 @@ void updateMessage(volatile CanMessage* _messageToUpdate, const CAN_message_t& m
   _messageToUpdate->count++;
 }
 
-void requestPgn(const uint32_t pgn) {
+void requestPgn(const uint32_t pgn)
+{
   auto tempMessage = J1939Message();
   tempMessage.setPgn(59904);
   tempMessage.setSourceAddress(51); // 248 works
@@ -99,60 +105,66 @@ void requestPgn(const uint32_t pgn) {
   // Serial.println("tempMessage.id?: " + (String)tempMessage.canId);
 
   msg.flags.extended = true;
-  
+
   // msg.id = 2364145912;
   msg.id = tempMessage.canId;
   msg.len = 3;
   msg.buf[0] = SeaDash::Bytes::getNthByte(pgn, 1);
   msg.buf[1] = SeaDash::Bytes::getNthByte(pgn, 2);
   msg.buf[2] = SeaDash::Bytes::getNthByte(pgn, 3);
-  Can1.write(msg);  // 59640 sa 0
+  Can1.write(msg); // 59640 sa 0
 }
 
-void logMessage(const String& messageName, const CAN_message_t& msg) {
-      Serial.print(messageName + ": ");
-      for (const unsigned char i : msg.buf) {
-          auto binary = String(i, BIN);
-          // Pad with leading zeros
-          while (binary.length() < 8) {
-              binary = "0" + binary;
-          }
-          Serial.print(binary);
-          Serial.print(" ");
-      }
-      Serial.print(" ? ");
-      for (const unsigned char i : msg.buf) {
-          auto binary = String(i, DEC);
-          // Pad with leading zeros
-          while (binary.length() < 3) {
-              binary = " " + binary;
-          }
-          Serial.print(binary);
-          Serial.print(" ");
-      }
-      Serial.print(" RPM: ");
-      Serial.print(CumminsBus::appData->rpm);
-      Serial.print(" Load: ");
-      Serial.print(CumminsBus::appData->load);
-      Serial.print(" Throttle: ");
-      Serial.print(CumminsBus::appData->throttlePercentage);
-      Serial.print(" MPH: ");
-      Serial.print(CumminsBus::appData->speedInMph);
-      Serial.print(" Gear: ");
-      Serial.print(CumminsBus::appData->currentGear);
-      Serial.print(" Timing: ");
-      Serial.print(CumminsBus::appData->timing);
-      Serial.print(" Fuel%: ");
-      Serial.print(CumminsBus::appData->fuelPercentage);
-      Serial.print(" Fuel Pres: ");
-      Serial.print(CumminsBus::appData->fuelPressure);
-      Serial.print(" Fuel Temp: ");
-      Serial.print(CumminsBus::appData->fuelTempF);
-      
-      Serial.println();
+void logMessage(const String& messageName, const CAN_message_t& msg)
+{
+  Serial.print(messageName + ": ");
+  for (const unsigned char i : msg.buf)
+  {
+    auto binary = String(i, BIN);
+    // Pad with leading zeros
+    while (binary.length() < 8)
+    {
+      binary = "0" + binary;
+    }
+    Serial.print(binary);
+    Serial.print(" ");
+  }
+  Serial.print(" ? ");
+  for (const unsigned char i : msg.buf)
+  {
+    auto binary = String(i, DEC);
+    // Pad with leading zeros
+    while (binary.length() < 3)
+    {
+      binary = " " + binary;
+    }
+    Serial.print(binary);
+    Serial.print(" ");
+  }
+  Serial.print(" RPM: ");
+  Serial.print(CumminsBus::appData->rpm);
+  Serial.print(" Load: ");
+  Serial.print(CumminsBus::appData->load);
+  Serial.print(" Throttle: ");
+  Serial.print(CumminsBus::appData->throttlePercentage);
+  Serial.print(" MPH: ");
+  Serial.print(CumminsBus::appData->speedInMph);
+  Serial.print(" Gear: ");
+  Serial.print(CumminsBus::appData->currentGear);
+  Serial.print(" Timing: ");
+  Serial.print(CumminsBus::appData->timing);
+  Serial.print(" Fuel%: ");
+  Serial.print(CumminsBus::appData->fuelPercentage);
+  Serial.print(" Fuel Pres: ");
+  Serial.print(CumminsBus::appData->fuelPressure);
+  Serial.print(" Fuel Temp: ");
+  Serial.print(CumminsBus::appData->fuelTempF);
+
+  Serial.println();
 }
 
-void CumminsBusSniff(const CAN_message_t& msg) {
+void CumminsBusSniff(const CAN_message_t& msg)
+{
   message = J1939Message();
   message.setCanId(msg.id);
   message.setData(msg.buf);
@@ -162,168 +174,178 @@ void CumminsBusSniff(const CAN_message_t& msg) {
   logMessage("sniffed", msg);
 
   // First switch statement for message.canId
-  switch (message.canId) {
-    case 256:
-      // PGN: 1 ????
-      updateMessage(&message256, msg);
-      // logMessage("256", msg);
-      // {
-      //   CAN_message_t newMsg = msg;
-      //   CumminsBus::updateTiming(newMsg);
-      // }
-      return;
+  switch (message.canId)
+  {
+  case 256:
+    // PGN: 1 ????
+    updateMessage(&message256, msg);
+  // logMessage("256", msg);
+  // {
+  //   CAN_message_t newMsg = msg;
+  //   CumminsBus::updateTiming(newMsg);
+  // }
+    return;
 
-    case 274:
-      // Must come from the VP44, no messages when bench testing
-      updateMessage(&message274, msg);
-      // logMessage("274", msg);
-      return;
-    // case 1280:
-      // logMessage("1280", msg);
-      // what is this?
-      // Serial.print("1280: ");
-      // for (uint8_t i = 0; i < 8; i++) {
-      //   Serial.print(msg.buf[i], 2);
-      //   Serial.print(" ");
-      // }
-      // Serial.println();
-      // return;
-    // case 1298:
-      // logMessage("1298", msg);
-      // what is this?
-      // return;
-    default:
-      // Handle other canId cases if necessary
-      break;
+  case 274:
+    // Must come from the VP44, no messages when bench testing
+    updateMessage(&message274, msg);
+  // logMessage("274", msg);
+    return;
+  // case 1280:
+  // logMessage("1280", msg);
+  // what is this?
+  // Serial.print("1280: ");
+  // for (uint8_t i = 0; i < 8; i++) {
+  //   Serial.print(msg.buf[i], 2);
+  //   Serial.print(" ");
+  // }
+  // Serial.println();
+  // return;
+  // case 1298:
+  // logMessage("1298", msg);
+  // what is this?
+  // return;
+  default:
+    // Handle other canId cases if necessary
+    break;
   }
 
   // Second switch statement for message.pgn
-  switch (message.pgn) {
-    // case TRANSMISSION_CONTROL_2_PGN:
-      // Transmission Control 2 - TC2 -
-      // break;
-    // case TRANSMISSION_CONTROL_7_PGN:
-      // Transmission Control 7 - TC7 -
-      // break;
-    // case TRANSMISSION_CONTROL_8_PGN:
-      // Transmission Control 8 - TC8 -
-      // break;
-    // case 60415:
-      // what's this?
-      // break;
+  switch (message.pgn)
+  {
+  // case TRANSMISSION_CONTROL_2_PGN:
+  // Transmission Control 2 - TC2 -
+  // break;
+  // case TRANSMISSION_CONTROL_7_PGN:
+  // Transmission Control 7 - TC7 -
+  // break;
+  // case TRANSMISSION_CONTROL_8_PGN:
+  // Transmission Control 8 - TC8 -
+  // break;
+  // case 60415:
+  // what's this?
+  // break;
 
-    // case 60671:
-      // what's this?
-      // break;
+  // case 60671:
+  // what's this?
+  // break;
 
-    // case 61440:
-      // Electronic Retarder Controller 1 - ERC1 -
-      // break;
+  // case 61440:
+  // Electronic Retarder Controller 1 - ERC1 -
+  // break;
 
-    case 61443:
-      // PGN: 61443
-      updateMessage(&pgn61443, msg);
-      break;
+  case 61443:
+    // PGN: 61443
+    updateMessage(&pgn61443, msg);
+    break;
 
-    // case 61444:
-      // Electronic Engine Controller 1 - EEC1 -
-      // break;
+  // case 61444:
+  // Electronic Engine Controller 1 - EEC1 -
+  // break;
 
-    case 65129:
-      updateMessage(&pgn65129, msg);
-      // logMessage("65129", msg);
-      break;
-    // case 64870:
-      // Engine Coolant High Resolution?
-      // Serial.println("Received 65129!!!");
-      // break;
+  case 65129:
+    updateMessage(&pgn65129, msg);
+  // logMessage("65129", msg);
+    break;
+  // case 64870:
+  // Engine Coolant High Resolution?
+  // Serial.println("Received 65129!!!");
+  // break;
 
-    // case 65247:
-      // Electronic Engine Controller 3 - EEC3 -
-      // break;
+  // case 65247:
+  // Electronic Engine Controller 3 - EEC3 -
+  // break;
 
-    // case 65252:
-      // Shutdown - SHUTDOWN -
-      // break;
+  // case 65252:
+  // Shutdown - SHUTDOWN -
+  // break;
 
-    case ENGINE_TEMP_1_PGN:
-      // PGN: 65262
-      if (message.sourceAddress == 149) {
-        updateMessage(&pgn65262_149, msg);
-      } else {
-        updateMessage(&pgn65262, msg);
-      }
-      break;
+  case ENGINE_TEMP_1_PGN:
+    // PGN: 65262
+    if (message.sourceAddress == 149)
+    {
+      updateMessage(&pgn65262_149, msg);
+    }
+    else
+    {
+      updateMessage(&pgn65262, msg);
+    }
+    break;
 
-    case 65263:
-      // PGN: 65263
-      if (message.sourceAddress == 149) {
-        updateMessage(&pgn65263_149, msg);
-      } else {
-        updateMessage(&pgn65263, msg);
-      }
-      break;
+  case 65263:
+    // PGN: 65263
+    if (message.sourceAddress == 149)
+    {
+      updateMessage(&pgn65263_149, msg);
+    }
+    else
+    {
+      updateMessage(&pgn65263, msg);
+    }
+    break;
 
-    // case 65264:
-      // Power Takeoff Information - PTO -
-      // break;
+  // case 65264:
+  // Power Takeoff Information - PTO -
+  // break;
 
-    // case CRUISE_CONTROL_PGN:
-      // Cruise Control/Vehicle Speed - CCVS -
-      // break;
+  // case CRUISE_CONTROL_PGN:
+  // Cruise Control/Vehicle Speed - CCVS -
+  // break;
 
-    // case 65266:
-      // Fuel Economy (Liquid) - LFE -
-      // break;
+  // case 65266:
+  // Fuel Economy (Liquid) - LFE -
+  // break;
 
-    // case 65269:
-      // Ambient Conditions - AMB -
-      // break;
+  // case 65269:
+  // Ambient Conditions - AMB -
+  // break;
 
-    case 65270:
-      // PGN: 65270
-      // Serial.println("Received 65270 from: " + (String)message.sourceAddress + " D1 " +
-      // (String)message.data[0] + " D2 " +
-      // (String)message.data[1] + " D3 " +
-      // (String)message.data[2] + " D4 " +
-      // (String)message.data[3] + " D5 " +
-      // (String)message.data[4] + " D6 " +
-      // (String)message.data[5] + " D7 " +
-      // (String)message.data[6] + " D8 " +
-      // (String)message.data[7]
-      // );
-      if (message.sourceAddress == 149) {
-        // Serial.println("Updating 65270");
-        updateMessage(&pgn65270, msg);
-        // logMessage("65270", msg);
-        // Serial.println("Updating 65270 " + (String)pgn65270.data[5] + " " + (String)pgn65270.data[6] + " " + (String)msg.buf[5] + " " + (String)msg.buf[6]);
-      }
-      break;
+  case 65270:
+    // PGN: 65270
+    // Serial.println("Received 65270 from: " + (String)message.sourceAddress + " D1 " +
+    // (String)message.data[0] + " D2 " +
+    // (String)message.data[1] + " D3 " +
+    // (String)message.data[2] + " D4 " +
+    // (String)message.data[3] + " D5 " +
+    // (String)message.data[4] + " D6 " +
+    // (String)message.data[5] + " D7 " +
+    // (String)message.data[6] + " D8 " +
+    // (String)message.data[7]
+    // );
+    if (message.sourceAddress == 149)
+    {
+      // Serial.println("Updating 65270");
+      updateMessage(&pgn65270, msg);
+      // logMessage("65270", msg);
+      // Serial.println("Updating 65270 " + (String)pgn65270.data[5] + " " + (String)pgn65270.data[6] + " " + (String)msg.buf[5] + " " + (String)msg.buf[6]);
+    }
+    break;
 
-    // case 65271:
-      // Vehicle Electrical Power - VEP -
-      // break;
+  // case 65271:
+  // Vehicle Electrical Power - VEP -
+  // break;
 
-    // case 65504:
-      // what's this?
-      // break;
+  // case 65504:
+  // what's this?
+  // break;
 
-    case 65272:
-      // Transmission Fluids
-      updateMessage(&pgn65272, msg);
-      break;
+  case 65272:
+    // Transmission Fluids
+    updateMessage(&pgn65272, msg);
+    break;
 
-    case 61442:
-      // Electronic Transmission Controller 1 - ETC1 -
-      updateJ1939Message(&CumminsBus::ElectronicTransmissionController1Pgn,
-                         msg);
-      break;
+  case 61442:
+    // Electronic Transmission Controller 1 - ETC1 -
+    updateJ1939Message(&CumminsBus::ElectronicTransmissionController1Pgn,
+                       msg);
+    break;
 
-    case 61445:
-      updateMessage(&pgn61445, msg);
-      break;
+  case 61445:
+    updateMessage(&pgn61445, msg);
+    break;
 
-    case DM1_DTCS_PGN: {
+  case DM1_DTCS_PGN:
+    {
       // This is a DTC message
       const uint8_t mil = SeaDash::Bits::getNBits(message.data[0], 6, 2);
       const uint8_t rsl = SeaDash::Bits::getNBits(message.data[0], 4, 2);
@@ -336,59 +358,66 @@ void CumminsBusSniff(const CAN_message_t& msg) {
       uint32_t spn = message.data[2];
       spn = SeaDash::Bits::setNBitsAt<uint32_t>(spn, message.data[3], 8, 8);
       const auto spnLeastSignificantBits =
-          SeaDash::Bits::getNBits<uint8_t>(message.data[4], 5, 3);
+        SeaDash::Bits::getNBits<uint8_t>(message.data[4], 5, 3);
       spn = SeaDash::Bits::setNBitsAt<uint32_t>(spn, spnLeastSignificantBits,
                                                 16, 3);
       const uint8_t fmi = SeaDash::Bits::getNBits(message.data[4], 0, 5);
       const uint8_t oc = SeaDash::Bits::getNBits(message.data[5], 0, 7);
       Serial.println(
-          "DM1 DTC: ID: " + static_cast<String>(message.canId) +
-          " SA: " + static_cast<String>(message.sourceAddress) + " SPN: " + static_cast<String>(spn) +
-          " Failure Mode Indicator: " + static_cast<String>(fmi) +
-          " Occurrence Count: " + static_cast<String>(oc) + " " + " MIL " + static_cast<String>(mil) +
-          " " + " RSL " + static_cast<String>(rsl) + " " + " AWL " + static_cast<String>(awl) + " " +
-          " PLS " + static_cast<String>(pls) + " MIL Blink " + static_cast<String>(milBlink) + " " +
-          " RSL Blink" + static_cast<String>(rslBlink) + " " + " AWL Blink" +
-          static_cast<String>(awlBlink) + " " + " PLS Blink" + static_cast<String>(plsBlink) +
-          " Data: " + static_cast<String>(message.data[0]) + " " + static_cast<String>(message.data[1]) +
-          " " + static_cast<String>(message.data[2]) + " " + static_cast<String>(message.data[3]) + " " +
-          static_cast<String>(message.data[4]) + " " + static_cast<String>(message.data[5]) + " " +
-          static_cast<String>(message.data[6]) + " " + static_cast<String>(message.data[7]));
-    } break;
+        "DM1 DTC: ID: " + static_cast<String>(message.canId) +
+        " SA: " + static_cast<String>(message.sourceAddress) + " SPN: " + static_cast<String>(spn) +
+        " Failure Mode Indicator: " + static_cast<String>(fmi) +
+        " Occurrence Count: " + static_cast<String>(oc) + " " + " MIL " + static_cast<String>(mil) +
+        " " + " RSL " + static_cast<String>(rsl) + " " + " AWL " + static_cast<String>(awl) + " " +
+        " PLS " + static_cast<String>(pls) + " MIL Blink " + static_cast<String>(milBlink) + " " +
+        " RSL Blink" + static_cast<String>(rslBlink) + " " + " AWL Blink" +
+        static_cast<String>(awlBlink) + " " + " PLS Blink" + static_cast<String>(plsBlink) +
+        " Data: " + static_cast<String>(message.data[0]) + " " + static_cast<String>(message.data[1]) +
+        " " + static_cast<String>(message.data[2]) + " " + static_cast<String>(message.data[3]) + " " +
+        static_cast<String>(message.data[4]) + " " + static_cast<String>(message.data[5]) + " " +
+        static_cast<String>(message.data[6]) + " " + static_cast<String>(message.data[7]));
+    }
+    break;
 
-    default:
-      // Serial.println(
-      //     "PGN: " + (String)message.pgn + " ID: " + (String)message.canId +
-      //     " Extended: " + (String)msg.flags.extended +
-      //     " From source address: " + (String)message.sourceAddress +
-      //     " Data: " + (String)message.data[0] + " " + (String)message.data[1] +
-      //     " " + (String)message.data[2] + " " + (String)message.data[3] + " " +
-      //     (String)message.data[4] + " " + (String)message.data[5] + " " +
-      //     (String)message.data[6] + " " + (String)message.data[7]);
-      ids[idsP++] = static_cast<int>(msg.id);
-      if (idsP >= 8) idsP = 0;
-      break;
+  default:
+    // Serial.println(
+    //     "PGN: " + (String)message.pgn + " ID: " + (String)message.canId +
+    //     " Extended: " + (String)msg.flags.extended +
+    //     " From source address: " + (String)message.sourceAddress +
+    //     " Data: " + (String)message.data[0] + " " + (String)message.data[1] +
+    //     " " + (String)message.data[2] + " " + (String)message.data[3] + " " +
+    //     (String)message.data[4] + " " + (String)message.data[5] + " " +
+    //     (String)message.data[6] + " " + (String)message.data[7]);
+    ids[idsP++] = static_cast<int>(msg.id);
+    if (idsP >= 8) idsP = 0;
+    break;
   }
-}  // ISR done
+} // ISR done
 
-void updateMaxTiming() {
+void updateMaxTiming()
+{
   // 1200 => 16
   // 2000 => 20
   // 2500 => 25
   // 3000+ => 30
-  if (RPM < 1200) {
+  if (RPM < 1200)
+  {
     maxTiming = Timing;
-  } else if (RPM > 3000) {
+  }
+  else if (RPM > 3000)
+  {
     maxTiming = 30.0f;
   }
 
   maxTiming =
-      SeaDash::Floats::mapf<float>(static_cast<float>(RPM), 1200.0f, 3000.0f, 16.0f, 30.0f);
+    SeaDash::Floats::mapf<float>(static_cast<float>(RPM), 1200.0f, 3000.0f, 16.0f, 30.0f);
 }
 
-void CumminsBus::updateTiming(CAN_message_t& msg) {
+void CumminsBus::updateTiming(CAN_message_t& msg)
+{
   // check coolant temp > 150
-  if (!warmedUp) {
+  if (!warmedUp)
+  {
     // Serial.println("Engine not warmed up yet, not adjusting timing " +
     // (String)waterTemp);
     return;
@@ -423,9 +452,9 @@ void CumminsBus::updateTiming(CAN_message_t& msg) {
   // );
 
   newTiming *=
-      128.0;  // Multiply by 128 to convert timing to 128 bits per degree
+    128.0; // Multiply by 128 to convert timing to 128 bits per degree
   shortTimingValue = static_cast<unsigned short>(
-      newTiming);  // Convert timing to unsigned short
+    newTiming); // Convert timing to unsigned short
 
   msg.buf[4] = shortTimingValue & 0xFF;
   msg.buf[5] = (shortTimingValue >> 8) & 0xFF;
@@ -434,20 +463,23 @@ void CumminsBus::updateTiming(CAN_message_t& msg) {
   Can1.write(msg);
 }
 
-void CumminsBus::updateTiming() {
+void CumminsBus::updateTiming()
+{
   // compute timing advance
   Timing =
-      static_cast<float>((message256.data[5] << 8) |
-      message256.data[4]);  // convert from little endian. 128 bits per degree.
-  Timing = (float)((Timing) / 128.0f);
+    static_cast<float>(message256.data[5] << 8 |
+      message256.data[4]); // convert from little endian. 128 bits per degree.
+  Timing = Timing / 128.0f;
 }
 
-float CumminsBus::getCurrentTiming() {
-  CumminsBus::updateTiming();
+float CumminsBus::getCurrentTiming()
+{
+  updateTiming();
   return Timing;
 }
 
-float CumminsBus::getCurrentFuelPressurePsi() {
+float CumminsBus::getCurrentFuelPressurePsi()
+{
   auto fuelPressure = static_cast<float>(pgn65263_149.data[0] * 4);
   fuelPressure /= 6.895;
   if (fuelPressure > maxFuelPressure) maxFuelPressure = fuelPressure;
@@ -456,68 +488,79 @@ float CumminsBus::getCurrentFuelPressurePsi() {
   return fuelPressure;
 }
 
-byte CumminsBus::getTransmissionTempC() {
-  const std::uint16_t tempRaw = (pgn65272.data[5] << 8) | pgn65272.data[4];
+byte CumminsBus::getTransmissionTempC()
+{
+  const std::uint16_t tempRaw = pgn65272.data[5] << 8 | pgn65272.data[4];
   const float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
   return static_cast<byte>(transmissionTemp);
 }
 
-float CumminsBus::getCurrentFuelPercentage() {
+float CumminsBus::getCurrentFuelPercentage()
+{
   // Fuel compute
-  FuelPercentage = static_cast<float>(((message256.data[1] << 8) | message256.data[0]));
-  FuelPercentage = (float)(FuelPercentage * 100.0f) /
-                   4096.0f;  // 4095 is max fuel allowed by pump
+  FuelPercentage = static_cast<float>((message256.data[1] << 8) | message256.data[0]);
+  FuelPercentage = FuelPercentage * 100.0f /
+    4096.0f; // 4095 is max fuel allowed by pump
   return FuelPercentage;
 }
 
-void CumminsBus::updateThrottlePercentage() {
-  throttlePercentage = static_cast<byte>(static_cast<float>(pgn61443.data[1]) * .4f);  // looking good!
+void CumminsBus::updateThrottlePercentage()
+{
+  throttlePercentage = static_cast<byte>(static_cast<float>(pgn61443.data[1]) * .4f); // looking good!
 }
 
-int CumminsBus::getCurrentThrottlePercentage() {
-  CumminsBus::updateThrottlePercentage();
+int CumminsBus::getCurrentThrottlePercentage()
+{
+  updateThrottlePercentage();
   return throttlePercentage;
 }
 
-void CumminsBus::updateLoad() {
-  load = static_cast<byte>(static_cast<float>(pgn61443.data[2]) * 0.8f);  // looking good!
+void CumminsBus::updateLoad()
+{
+  load = static_cast<byte>(static_cast<float>(pgn61443.data[2]) * 0.8f); // looking good!
 }
 
-int CumminsBus::getCurrentLoad() {
-  CumminsBus::updateLoad();
+int CumminsBus::getCurrentLoad()
+{
+  updateLoad();
   return load;
 }
 
-void CumminsBus::updateRpms() {
-  RPM = (message256.data[7] << 8) |
-        message256.data[6];  // convert from little endian
+void CumminsBus::updateRpms()
+{
+  RPM = message256.data[7] << 8 |
+    message256.data[6]; // convert from little endian
   RPM /= 4;
 }
 
-int CumminsBus::getCurrentRpms() {
-  CumminsBus::updateRpms();
+int CumminsBus::getCurrentRpms()
+{
+  updateRpms();
   return static_cast<int>(RPM);
 }
 
-int CumminsBus::getCurrentAMT() { return pgn65270.data[2] - 40; }
+float CumminsBus::getCurrentAMT() { return static_cast<float>(pgn65270.data[2]) - 40.0f; }
 
-int CumminsBus::getCurrentBoostInPsi() {
-  const double kpa = pgn65270.data[1] * 2;
-  const double psi = kpa / 6.895;
-  return static_cast<int>(psi);
+float CumminsBus::getCurrentBoostInPsi()
+{
+  const float kpa = static_cast<float>(pgn65270.data[1]) * 2.0f;
+  const float psi = static_cast<float>(kpa) / 6.895f;
+  return psi;
 }
 
-int CumminsBus::getCurrentBoostTemp() {
+float CumminsBus::getCurrentBoostTemp()
+{
   // Compute Boost Temperature
-  auto boostTemp = static_cast<float>((pgn65129.data[0] << 8) | pgn65129.data[1]);  // Raw
-  boostTemp = boostTemp * 0.03125f;                                       // Offset
-  boostTemp = boostTemp - 273.0f;                                   // Celsius
-  boostTemp = ((boostTemp * 9) / 5) + 32;                           // Fahrenheit
+  auto boostTemp = static_cast<float>(pgn65129.data[0] << 8 | pgn65129.data[1]); // Raw
+  boostTemp = boostTemp * 0.03125f; // Offset
+  boostTemp = boostTemp - 273.0f; // Celsius
+  boostTemp = ((boostTemp * 9) / 5) + 32; // Fahrenheit
 
-  return static_cast<int>(boostTemp);
+  return boostTemp;
 }
 
-float CumminsBus::getCurrentEgtTemp() {
+float CumminsBus::getCurrentEgtTemp()
+{
   auto egt = static_cast<float>(pgn65270.data[5] * 255);
   // Serial.print("EGT? 1 " + (String)pgn65270.data[5]);
   egt += static_cast<float>(pgn65270.data[6]);
@@ -549,9 +592,11 @@ float CumminsBus::getCurrentEgtTemp() {
 //   return true;
 // }
 
-int CumminsBus::getCurrentWaterTemp() {
-  waterTemp = pgn65262.data[0] - 40;  // Confirmed!!!
-  if (!warmedUp && waterTemp > 65) {
+int CumminsBus::getCurrentWaterTemp()
+{
+  waterTemp = pgn65262.data[0] - 40; // Confirmed!!!
+  if (!warmedUp && waterTemp > 65)
+  {
     warmedUp = true;
   }
   return static_cast<int>(waterTemp);
@@ -578,38 +623,44 @@ int CumminsBus::getCurrentWaterTemp() {
 //   return true;
 // }
 
-byte CumminsBus::getCurrentOilPressure() {
+byte CumminsBus::getCurrentOilPressure()
+{
   // Compute Oil Pressure
-  oilPressure = pgn65263.data[3] * 4 / 6.895;  // Confirmed!!!
+  oilPressure = pgn65263.data[3] * 4 / 6.895; // Confirmed!!!
   return static_cast<byte>(oilPressure);
 }
 
-int CumminsBus::getCurrentFuelTemp() {
+int CumminsBus::getCurrentFuelTemp()
+{
   // Compute Fuel Temperature
-  fuelTemp = (message274.data[7] << 8) | message274.data[6];  // Raw
-  fuelTemp = fuelTemp / 16;                                   // Kelvin
-  fuelTemp = fuelTemp - 273.15;                               // Celsius
-  fuelTemp = ((fuelTemp * 9) / 5) + 32;                       // Fahrenheit
+  fuelTemp = (message274.data[7] << 8) | message274.data[6]; // Raw
+  fuelTemp = fuelTemp / 16; // Kelvin
+  fuelTemp = fuelTemp - 273.15; // Celsius
+  fuelTemp = ((fuelTemp * 9) / 5) + 32; // Fahrenheit
 
   return static_cast<int>(fuelTemp);
 }
 
-char CumminsBus::getRequestedRange() {
+char CumminsBus::getRequestedRange()
+{
   return static_cast<char>(pgn61445.data[4]);
 }
 
-int8_t CumminsBus::getCurrentGear() {
+int8_t CumminsBus::getCurrentGear()
+{
   return static_cast<int8_t>(pgn61445.data[3] - 125);
 }
 
-int8_t CumminsBus::getSelectedGear() {
+int8_t CumminsBus::getSelectedGear()
+{
   return static_cast<int8_t>(pgn61445.data[0] - 125);
 }
 
-void CumminsBus::initialize(AppData *appDat) {
+void CumminsBus::initialize(AppData* _appData)
+{
   Serial.println("Cummins Bus initializing");
 
-  appData = appDat;
+  appData = _appData;
 
   Can1.begin();
   Can1.setBaudRate(250 * 1000);
@@ -629,7 +680,10 @@ void CumminsBus::initialize(AppData *appDat) {
 // uint8_t p = 3;
 
 uint32_t currentMillis = millis();
-void CumminsBus::loop() {  // request PGN's every 1 second
+
+void CumminsBus::loop()
+{
+  // request PGN's every 1 second
   // if (currentMillis - last10ms >= 10) {
   //   J1939 tempMessage = J1939();
   //   tempMessage.setPgn(61443);
@@ -639,7 +693,7 @@ void CumminsBus::loop() {  // request PGN's every 1 second
   //   // Serial.println("tempMessage.id?: " + (String)tempMessage.canId);
 
   //   msg.flags.extended = 1;
-    
+
   //   // msg.id = 2364145912;
   //   msg.id = tempMessage.canId;
   //   msg.len = 8;
@@ -651,7 +705,8 @@ void CumminsBus::loop() {  // request PGN's every 1 second
   //   last10ms = currentMillis;
 
   // }
-  if (currentMillis - lastJ1939Request >= 1000) {
+  if (currentMillis - lastJ1939Request >= 1000)
+  {
     requestPgn(ENGINE_TEMP_1_PGN);
     requestPgn(65129);
     requestPgn(64870);
@@ -673,8 +728,6 @@ void CumminsBus::loop() {  // request PGN's every 1 second
     lastJ1939Request = currentMillis;
 
 
-
-
     // Serial.print("Seen SA's [");
 
     // for (auto it = sourceAddresses.begin(); it != sourceAddresses.end(); ++it) {
@@ -690,11 +743,12 @@ void CumminsBus::loop() {  // request PGN's every 1 second
 
 SeaDash::Uint32::IncrementalCircularAverage speedAverage(10);
 
-byte CumminsBus::getVehicleSpeed() {
+byte CumminsBus::getVehicleSpeed()
+{
   // Compute Vehicle Speed
   const uint32_t speedRaw =
-      (CumminsBus::ElectronicTransmissionController1Pgn.data[2] << 8) |
-      CumminsBus::ElectronicTransmissionController1Pgn.data[1];
+    ElectronicTransmissionController1Pgn.data[2] << 8 |
+    ElectronicTransmissionController1Pgn.data[1];
   const auto outputShaftRpm = static_cast<float>(speedRaw) * .125f;
   const float wheelRpm = outputShaftRpm / 3.73f;
   const float inchesPerMinute = wheelRpm * 100.11f;
