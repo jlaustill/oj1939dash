@@ -71,7 +71,13 @@ void OJ1939Dash::setup()
     Serial.println("FRAM initialization failed!");
   }
 
-  J1939Bus::initialize(&currentData);
+  // Check if J1939Bus initialization was successful
+  if (!J1939Bus::initialize(&currentData))
+  {
+    Serial.println("CAN bus initialization failed!");
+    // Consider adding some form of user feedback
+    // For example, you could set a global error flag or blink an LED
+  }
 
   if (!O_J1939_Dash_Fram::loadData(&currentData))
   {

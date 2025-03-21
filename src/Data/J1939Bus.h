@@ -8,6 +8,7 @@
 #include <AppData.h>
 #include <SeaDash.hpp>
 #include <unordered_set>
+#include <queue>
 
 struct CanMessage
 {
@@ -17,10 +18,26 @@ struct CanMessage
     unsigned count;
 };
 
+struct DTCMessage
+{
+    uint32_t canId;
+    uint8_t sourceAddress;
+    uint8_t data[8];
+    bool valid = false;
+};
+
+struct CANBufferMessage
+{
+    uint32_t canId;
+    uint8_t len;
+    uint8_t buf[8];
+    bool valid = false;
+};
+
 class J1939Bus
 {
 public:
-    static void initialize(AppData* appData);
+    static bool initialize(AppData* appData);
     static void loop();
     static int getCurrentRpms();
     static int getCurrentWaterTemp();
@@ -109,6 +126,32 @@ private:
 
     // Friend function for CAN interrupt handler
     friend void CumminsBusSniff(const CAN_message_t& _msg);
+
+    // DTC message buffer
+    static const size_t DTC_BUFFER_SIZE = 64;
+
+    static DTCMessage dtcBuffer[DTC_BUFFER_SIZE];
+    static volatile size_t dtcBufferHead;
+    static volatile size_t dtcBufferTail;
+    static volatile bool dtcBufferFull;
+
+    // DTC handling methods
+    static bool addToDTCBuffer(const J1939Message& message);
+    static bool getFromDTCBuffer(DTCMessage& message);
+    static void processDTCMessages();
+
+    // General CAN message buffer
+    static const size_t CAN_BUFFER_SIZE = 128; // Larger than DTC buffer
+    static CANBufferMessage canBuffer[CAN_BUFFER_SIZE];
+    static volatile size_t canBufferHead;
+    static volatile size_t canBufferTail;
+    static volatile bool canBufferFull;
+
+    // CAN buffer methods
+    static bool addToCANBuffer(const CAN_message_t& msg);
+    static bool getFromCANBuffer(CANBufferMessage& message);
+    static void processCANMessages();
+    static bool requestPgnWithTimeout(uint32_t pgn, unsigned long timeoutMs);
 };
 
 #endif  // O_J1939_DASH_J1939_BUS_H
