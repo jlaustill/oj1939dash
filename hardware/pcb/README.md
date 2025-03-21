@@ -1,1 +1,0 @@
-I'm designing the pcb on easyeda, you can see it here https://easyeda.com/jlaustill/open-source-powertrain-control-module

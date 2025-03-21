@@ -2,8 +2,8 @@
 // Created by jlaustill on 7/18/21.
 //
 
-#ifndef OPCM_APPDATA_H
-#define OPCM_APPDATA_H
+#ifndef O_J1939_DASH_APPDATA_H
+#define O_J1939_DASH_APPDATA_H
 
 #include <Arduino.h>
 
@@ -53,4 +53,4 @@ struct AppData {
   int8_t selectedGear;
 };
 
-#endif  // OPCM_APPDATA_H
+#endif  // O_J1939_DASH_APPDATA_H

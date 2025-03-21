@@ -9,7 +9,7 @@
 #include <FlexCAN_T4.h>
 #include <J1939Message.h>
 
-static FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1;
+static FlexCAN_T4<CAN1, RX_SIZE_256> Can1;
 
 #include <SeaDash.hpp>
 #include <cstdint>
@@ -24,14 +24,7 @@ std::unordered_set<uint8_t> sourceAddresses;
 // Track update timings
 uint32_t lastJ1939Request = 0;
 
-// volatile byte data[16];
 boolean warmedUp = false;
-
-// J1939 message structure
-// struct J1939Message {
-//   std::uint32_t id;
-//   std::uint8_t data[8];
-// };
 
 AppData *CumminsBus::appData;
 
@@ -78,12 +71,12 @@ volatile unsigned short shortTimingValue = 0;
 volatile int ids[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 volatile int idsP = 0;
 
-void updateJ1939Message(J1939Message* _messageToUpdate, const CAN_message_t msg) {
+void updateJ1939Message(J1939Message* _messageToUpdate, const CAN_message_t& msg) {
   _messageToUpdate->setCanId(msg.id);
   _messageToUpdate->setData(msg.buf);
 }
 
-void updateMessage(volatile CanMessage* _messageToUpdate, CAN_message_t msg) {
+void updateMessage(volatile CanMessage* _messageToUpdate, const CAN_message_t& msg) {
   _messageToUpdate->id = msg.id;
   _messageToUpdate->length = msg.len;
   _messageToUpdate->data[0] = msg.buf[0];
@@ -97,15 +90,15 @@ void updateMessage(volatile CanMessage* _messageToUpdate, CAN_message_t msg) {
   _messageToUpdate->count++;
 }
 
-void requestPgn(uint32_t pgn) {
-  J1939Message tempMessage = J1939Message();
+void requestPgn(const uint32_t pgn) {
+  auto tempMessage = J1939Message();
   tempMessage.setPgn(59904);
   tempMessage.setSourceAddress(51); // 248 works
   tempMessage.setPriority(3);
 
   // Serial.println("tempMessage.id?: " + (String)tempMessage.canId);
 
-  msg.flags.extended = 1;
+  msg.flags.extended = true;
   
   // msg.id = 2364145912;
   msg.id = tempMessage.canId;
@@ -116,10 +109,10 @@ void requestPgn(uint32_t pgn) {
   Can1.write(msg);  // 59640 sa 0
 }
 
-void logMessage(String messageName, const CAN_message_t msg) {
+void logMessage(const String& messageName, const CAN_message_t& msg) {
       Serial.print(messageName + ": ");
-      for (uint8_t i = 0; i < 8; i++) {
-          String binary = String(msg.buf[i], BIN);
+      for (const unsigned char i : msg.buf) {
+          auto binary = String(i, BIN);
           // Pad with leading zeros
           while (binary.length() < 8) {
               binary = "0" + binary;
@@ -128,8 +121,8 @@ void logMessage(String messageName, const CAN_message_t msg) {
           Serial.print(" ");
       }
       Serial.print(" ? ");
-      for (uint8_t i = 0; i < 8; i++) {
-          String binary = String(msg.buf[i], DEC);
+      for (const unsigned char i : msg.buf) {
+          auto binary = String(i, DEC);
           // Pad with leading zeros
           while (binary.length() < 3) {
               binary = " " + binary;
@@ -185,7 +178,7 @@ void CumminsBusSniff(const CAN_message_t& msg) {
       updateMessage(&message274, msg);
       // logMessage("274", msg);
       return;
-    case 1280:
+    // case 1280:
       // logMessage("1280", msg);
       // what is this?
       // Serial.print("1280: ");
@@ -194,11 +187,11 @@ void CumminsBusSniff(const CAN_message_t& msg) {
       //   Serial.print(" ");
       // }
       // Serial.println();
-      return;
-    case 1298:
+      // return;
+    // case 1298:
       // logMessage("1298", msg);
       // what is this?
-      return;
+      // return;
     default:
       // Handle other canId cases if necessary
       break;
@@ -206,52 +199,52 @@ void CumminsBusSniff(const CAN_message_t& msg) {
 
   // Second switch statement for message.pgn
   switch (message.pgn) {
-    case TRANSMISSION_CONTROL_2_PGN:
+    // case TRANSMISSION_CONTROL_2_PGN:
       // Transmission Control 2 - TC2 -
-      break;
-    case TRANSMISSION_CONTROL_7_PGN:
+      // break;
+    // case TRANSMISSION_CONTROL_7_PGN:
       // Transmission Control 7 - TC7 -
-      break;
-    case TRANSMISSION_CONTROL_8_PGN:
+      // break;
+    // case TRANSMISSION_CONTROL_8_PGN:
       // Transmission Control 8 - TC8 -
-      break;
-    case 60415:
+      // break;
+    // case 60415:
       // what's this?
-      break;
+      // break;
 
-    case 60671:
+    // case 60671:
       // what's this?
-      break;
+      // break;
 
-    case 61440:
+    // case 61440:
       // Electronic Retarder Controller 1 - ERC1 -
-      break;
+      // break;
 
     case 61443:
       // PGN: 61443
       updateMessage(&pgn61443, msg);
       break;
 
-    case 61444:
+    // case 61444:
       // Electronic Engine Controller 1 - EEC1 -
-      break;
+      // break;
 
     case 65129:
       updateMessage(&pgn65129, msg);
       // logMessage("65129", msg);
       break;
-    case 64870:
+    // case 64870:
       // Engine Coolant High Resolution?
       // Serial.println("Received 65129!!!");
-      break;
+      // break;
 
-    case 65247:
+    // case 65247:
       // Electronic Engine Controller 3 - EEC3 -
-      break;
+      // break;
 
-    case 65252:
+    // case 65252:
       // Shutdown - SHUTDOWN -
-      break;
+      // break;
 
     case ENGINE_TEMP_1_PGN:
       // PGN: 65262
@@ -271,21 +264,21 @@ void CumminsBusSniff(const CAN_message_t& msg) {
       }
       break;
 
-    case 65264:
+    // case 65264:
       // Power Takeoff Information - PTO -
-      break;
+      // break;
 
-    case CRUISE_CONTROL_PGN:
+    // case CRUISE_CONTROL_PGN:
       // Cruise Control/Vehicle Speed - CCVS -
-      break;
+      // break;
 
-    case 65266:
+    // case 65266:
       // Fuel Economy (Liquid) - LFE -
-      break;
+      // break;
 
-    case 65269:
+    // case 65269:
       // Ambient Conditions - AMB -
-      break;
+      // break;
 
     case 65270:
       // PGN: 65270
@@ -307,13 +300,13 @@ void CumminsBusSniff(const CAN_message_t& msg) {
       }
       break;
 
-    case 65271:
+    // case 65271:
       // Vehicle Electrical Power - VEP -
-      break;
+      // break;
 
-    case 65504:
+    // case 65504:
       // what's this?
-      break;
+      // break;
 
     case 65272:
       // Transmission Fluids
@@ -332,35 +325,35 @@ void CumminsBusSniff(const CAN_message_t& msg) {
 
     case DM1_DTCS_PGN: {
       // This is a DTC message
-      uint8_t mil = SeaDash::Bits::getNBits(message.data[0], 6, 2);
-      uint8_t rsl = SeaDash::Bits::getNBits(message.data[0], 4, 2);
-      uint8_t awl = SeaDash::Bits::getNBits(message.data[0], 2, 2);
-      uint8_t pls = SeaDash::Bits::getNBits(message.data[0], 0, 2);
-      uint8_t milBlink = SeaDash::Bits::getNBits(message.data[1], 6, 2);
-      uint8_t rslBlink = SeaDash::Bits::getNBits(message.data[1], 4, 2);
-      uint8_t awlBlink = SeaDash::Bits::getNBits(message.data[1], 2, 2);
-      uint8_t plsBlink = SeaDash::Bits::getNBits(message.data[1], 0, 2);
+      const uint8_t mil = SeaDash::Bits::getNBits(message.data[0], 6, 2);
+      const uint8_t rsl = SeaDash::Bits::getNBits(message.data[0], 4, 2);
+      const uint8_t awl = SeaDash::Bits::getNBits(message.data[0], 2, 2);
+      const uint8_t pls = SeaDash::Bits::getNBits(message.data[0], 0, 2);
+      const uint8_t milBlink = SeaDash::Bits::getNBits(message.data[1], 6, 2);
+      const uint8_t rslBlink = SeaDash::Bits::getNBits(message.data[1], 4, 2);
+      const uint8_t awlBlink = SeaDash::Bits::getNBits(message.data[1], 2, 2);
+      const uint8_t plsBlink = SeaDash::Bits::getNBits(message.data[1], 0, 2);
       uint32_t spn = message.data[2];
       spn = SeaDash::Bits::setNBitsAt<uint32_t>(spn, message.data[3], 8, 8);
-      uint8_t spnLeastSignificantBits =
+      const auto spnLeastSignificantBits =
           SeaDash::Bits::getNBits<uint8_t>(message.data[4], 5, 3);
       spn = SeaDash::Bits::setNBitsAt<uint32_t>(spn, spnLeastSignificantBits,
                                                 16, 3);
-      uint8_t fmi = SeaDash::Bits::getNBits(message.data[4], 0, 5);
-      uint8_t oc = SeaDash::Bits::getNBits(message.data[5], 0, 7);
+      const uint8_t fmi = SeaDash::Bits::getNBits(message.data[4], 0, 5);
+      const uint8_t oc = SeaDash::Bits::getNBits(message.data[5], 0, 7);
       Serial.println(
-          "DM1 DTC: ID: " + (String)message.canId +
-          " SA: " + (String)message.sourceAddress + " SPN: " + (String)spn +
-          " Failure Mode Indicator: " + (String)fmi +
-          " Occurence Count: " + (String)oc + " " + " MIL " + (String)mil +
-          " " + " RSL " + (String)rsl + " " + " AWL " + (String)awl + " " +
-          " PLS " + (String)pls + " MIL Blink " + (String)milBlink + " " +
-          " RSL Blink" + (String)rslBlink + " " + " AWL Blink" +
-          (String)awlBlink + " " + " PLS Blink" + (String)plsBlink +
-          " Data: " + (String)message.data[0] + " " + (String)message.data[1] +
-          " " + (String)message.data[2] + " " + (String)message.data[3] + " " +
-          (String)message.data[4] + " " + (String)message.data[5] + " " +
-          (String)message.data[6] + " " + (String)message.data[7]);
+          "DM1 DTC: ID: " + static_cast<String>(message.canId) +
+          " SA: " + static_cast<String>(message.sourceAddress) + " SPN: " + static_cast<String>(spn) +
+          " Failure Mode Indicator: " + static_cast<String>(fmi) +
+          " Occurrence Count: " + static_cast<String>(oc) + " " + " MIL " + static_cast<String>(mil) +
+          " " + " RSL " + static_cast<String>(rsl) + " " + " AWL " + static_cast<String>(awl) + " " +
+          " PLS " + static_cast<String>(pls) + " MIL Blink " + static_cast<String>(milBlink) + " " +
+          " RSL Blink" + static_cast<String>(rslBlink) + " " + " AWL Blink" +
+          static_cast<String>(awlBlink) + " " + " PLS Blink" + static_cast<String>(plsBlink) +
+          " Data: " + static_cast<String>(message.data[0]) + " " + static_cast<String>(message.data[1]) +
+          " " + static_cast<String>(message.data[2]) + " " + static_cast<String>(message.data[3]) + " " +
+          static_cast<String>(message.data[4]) + " " + static_cast<String>(message.data[5]) + " " +
+          static_cast<String>(message.data[6]) + " " + static_cast<String>(message.data[7]));
     } break;
 
     default:
@@ -372,7 +365,7 @@ void CumminsBusSniff(const CAN_message_t& msg) {
       //     " " + (String)message.data[2] + " " + (String)message.data[3] + " " +
       //     (String)message.data[4] + " " + (String)message.data[5] + " " +
       //     (String)message.data[6] + " " + (String)message.data[7]);
-      ids[idsP++] = msg.id;
+      ids[idsP++] = static_cast<int>(msg.id);
       if (idsP >= 8) idsP = 0;
       break;
   }
@@ -390,7 +383,7 @@ void updateMaxTiming() {
   }
 
   maxTiming =
-      SeaDash::Floats::mapf<float>((float)RPM, 1200.0f, 3000.0f, 16.0f, 30.0f);
+      SeaDash::Floats::mapf<float>(static_cast<float>(RPM), 1200.0f, 3000.0f, 16.0f, 30.0f);
 }
 
 void CumminsBus::updateTiming(CAN_message_t& msg) {
@@ -414,7 +407,7 @@ void CumminsBus::updateTiming(CAN_message_t& msg) {
   CumminsBus::updateLoad();
   maxOfThrottleAndLoad = throttlePercentage > load ? throttlePercentage : load;
   // map between current timing and max timing based on max of throttle and load
-  newTiming = SeaDash::Floats::mapf<float>((float)maxOfThrottleAndLoad, 0.0f,
+  newTiming = SeaDash::Floats::mapf<float>(static_cast<float>(maxOfThrottleAndLoad), 0.0f,
                                            100.0f, Timing, maxTiming);
 
   // Serial.println(
@@ -444,8 +437,8 @@ void CumminsBus::updateTiming(CAN_message_t& msg) {
 void CumminsBus::updateTiming() {
   // compute timing advance
   Timing =
-      (message256.data[5] << 8) |
-      message256.data[4];  // convert from little endian. 128 bits per degree.
+      static_cast<float>((message256.data[5] << 8) |
+      message256.data[4]);  // convert from little endian. 128 bits per degree.
   Timing = (float)((Timing) / 128.0f);
 }
 
@@ -455,7 +448,7 @@ float CumminsBus::getCurrentTiming() {
 }
 
 float CumminsBus::getCurrentFuelPressurePsi() {
-  float fuelPressure = pgn65263_149.data[0] * 4;
+  auto fuelPressure = static_cast<float>(pgn65263_149.data[0] * 4);
   fuelPressure /= 6.895;
   if (fuelPressure > maxFuelPressure) maxFuelPressure = fuelPressure;
   if (fuelPressure < minFuelPressure) minFuelPressure = fuelPressure;
@@ -464,21 +457,21 @@ float CumminsBus::getCurrentFuelPressurePsi() {
 }
 
 byte CumminsBus::getTransmissionTempC() {
-  std::uint16_t tempRaw = (pgn65272.data[5] << 8) | pgn65272.data[4];
-  float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
+  const std::uint16_t tempRaw = (pgn65272.data[5] << 8) | pgn65272.data[4];
+  const float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
   return static_cast<byte>(transmissionTemp);
 }
 
 float CumminsBus::getCurrentFuelPercentage() {
   // Fuel compute
-  FuelPercentage = ((message256.data[1] << 8) | message256.data[0]);
+  FuelPercentage = static_cast<float>(((message256.data[1] << 8) | message256.data[0]));
   FuelPercentage = (float)(FuelPercentage * 100.0f) /
                    4096.0f;  // 4095 is max fuel allowed by pump
   return FuelPercentage;
 }
 
 void CumminsBus::updateThrottlePercentage() {
-  throttlePercentage = pgn61443.data[1] * .4f;  // looking good!
+  throttlePercentage = static_cast<byte>(static_cast<float>(pgn61443.data[1]) * .4f);  // looking good!
 }
 
 int CumminsBus::getCurrentThrottlePercentage() {
@@ -487,7 +480,7 @@ int CumminsBus::getCurrentThrottlePercentage() {
 }
 
 void CumminsBus::updateLoad() {
-  load = static_cast<float>(pgn61443.data[2]) * 0.8f;  // looking good!
+  load = static_cast<byte>(static_cast<float>(pgn61443.data[2]) * 0.8f);  // looking good!
 }
 
 int CumminsBus::getCurrentLoad() {
@@ -503,35 +496,35 @@ void CumminsBus::updateRpms() {
 
 int CumminsBus::getCurrentRpms() {
   CumminsBus::updateRpms();
-  return (int)RPM;
+  return static_cast<int>(RPM);
 }
 
 int CumminsBus::getCurrentAMT() { return pgn65270.data[2] - 40; }
 
 int CumminsBus::getCurrentBoostInPsi() {
-  double kpa = pgn65270.data[1] * 2;
-  double psi = kpa / 6.895;
-  return psi;
+  const double kpa = pgn65270.data[1] * 2;
+  const double psi = kpa / 6.895;
+  return static_cast<int>(psi);
 }
 
 int CumminsBus::getCurrentBoostTemp() {
   // Compute Boost Temperature
-  float boostTemp = (pgn65129.data[0] << 8) | pgn65129.data[1];  // Raw
-  boostTemp = boostTemp * 0.03125;                                       // Offset
-  boostTemp = boostTemp - 273.0;                                   // Celsius
+  auto boostTemp = static_cast<float>((pgn65129.data[0] << 8) | pgn65129.data[1]);  // Raw
+  boostTemp = boostTemp * 0.03125f;                                       // Offset
+  boostTemp = boostTemp - 273.0f;                                   // Celsius
   boostTemp = ((boostTemp * 9) / 5) + 32;                           // Fahrenheit
 
-  return boostTemp;
+  return static_cast<int>(boostTemp);
 }
 
 float CumminsBus::getCurrentEgtTemp() {
-  float egt = pgn65270.data[5] * 255;
+  auto egt = static_cast<float>(pgn65270.data[5] * 255);
   // Serial.print("EGT? 1 " + (String)pgn65270.data[5]);
-  egt += pgn65270.data[6];
+  egt += static_cast<float>(pgn65270.data[6]);
   // Serial.println(" 2 " + (String)pgn65270.data[6]);
-  egt *= 0.03125;
+  egt *= 0.03125f;
   // Serial.print(" 3 " + (String)egt);
-  egt -= 273.0;
+  egt -= 273.0f;
   // Serial.println(" 4 " + (String)egt);
 
 
@@ -588,7 +581,7 @@ int CumminsBus::getCurrentWaterTemp() {
 byte CumminsBus::getCurrentOilPressure() {
   // Compute Oil Pressure
   oilPressure = pgn65263.data[3] * 4 / 6.895;  // Confirmed!!!
-  return (byte)oilPressure;
+  return static_cast<byte>(oilPressure);
 }
 
 int CumminsBus::getCurrentFuelTemp() {
@@ -598,7 +591,7 @@ int CumminsBus::getCurrentFuelTemp() {
   fuelTemp = fuelTemp - 273.15;                               // Celsius
   fuelTemp = ((fuelTemp * 9) / 5) + 32;                       // Fahrenheit
 
-  return fuelTemp;
+  return static_cast<int>(fuelTemp);
 }
 
 char CumminsBus::getRequestedRange() {
@@ -635,8 +628,8 @@ void CumminsBus::initialize(AppData *appDat) {
 // uint8_t sa = 248;
 // uint8_t p = 3;
 
+uint32_t currentMillis = millis();
 void CumminsBus::loop() {  // request PGN's every 1 second
-  uint32_t currentMillis = millis();
   // if (currentMillis - last10ms >= 10) {
   //   J1939 tempMessage = J1939();
   //   tempMessage.setPgn(61443);
@@ -699,13 +692,13 @@ SeaDash::Uint32::IncrementalCircularAverage speedAverage(10);
 
 byte CumminsBus::getVehicleSpeed() {
   // Compute Vehicle Speed
-  uint32_t speedRaw =
+  const uint32_t speedRaw =
       (CumminsBus::ElectronicTransmissionController1Pgn.data[2] << 8) |
       CumminsBus::ElectronicTransmissionController1Pgn.data[1];
-  uint32_t outputShaftRpm = speedRaw * .125;
-  float wheelRpm = outputShaftRpm / 3.73;
-  float inchesPerMinute = wheelRpm * 100.11;
-  float milesPerHour = inchesPerMinute * 60 / 63360;
+  const auto outputShaftRpm = static_cast<float>(speedRaw) * .125f;
+  const float wheelRpm = outputShaftRpm / 3.73f;
+  const float inchesPerMinute = wheelRpm * 100.11f;
+  const float milesPerHour = inchesPerMinute * 60 / 63360;
 
   speedAverage.addValue(static_cast<byte>(milesPerHour));
 
