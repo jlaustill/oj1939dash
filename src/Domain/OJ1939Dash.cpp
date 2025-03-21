@@ -193,7 +193,8 @@ void OJ1939Dash::loop()
         // Find the position of the equals sign
 
         // Check if we have a valid format: "setOdometer=X"
-        if (const int equalsPos = serialBuffer.indexOf("="); equalsPos > 0 && equalsPos < serialBuffer.length() - 1)
+        if (const uint32_t equalsPos = serialBuffer.indexOf("="); equalsPos > 0 && equalsPos < serialBuffer.length() -
+          1)
         {
           // Extract the number substring
           String valueStr = serialBuffer.substring(equalsPos + 1);
