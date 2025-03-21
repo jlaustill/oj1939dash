@@ -15,14 +15,10 @@ unsigned long last1sUpdate = 0;
 // Buffer for batching commands
 String batchCmdBuffer = "";
 
-void Nextion::sendCmd(String cmd) { batchCmdBuffer += cmd + "\xFF\xFF\xFF"; }
+void Nextion::sendCmd(const String& cmd) { batchCmdBuffer += cmd + "\xFF\xFF\xFF"; }
 
 void Nextion::sendBatch() {
   if (batchCmdBuffer.length() > 0) {
-#ifdef NEXTION_DEBUG
-    Serial.print("Sending batch command: ");
-    Serial.println(batchCmdBuffer);
-#endif
     Serial3.print(batchCmdBuffer);
     batchCmdBuffer = "";
   }
@@ -36,7 +32,7 @@ void Nextion::initialize() {
   sendCmd("");  // clear the buffer
 }
 
-String formatNumber(double number) {
+String formatNumber(const double number) {
   String finalText = "";
   char buffer[20];  // Adjust the buffer size according to your needs
 
@@ -79,19 +75,19 @@ void Nextion::updateDisplayData(AppData *currentData) {
   // Update the display every 100ms
   if (currentMillis - last100msUpdate >= 100) {
 
-    sendCmd("mph.val=" + (String)currentData->speedInMph);
-    sendCmd("rpm.val=" + (String)currentData->rpm);
-    String bpt = "bp.val=" + (String)(int)currentData->boost;
+    sendCmd("mph.val=" + static_cast<String>(currentData->speedInMph));
+    sendCmd("rpm.val=" + static_cast<String>(currentData->rpm));
+    const String bpt = "bp.val=" + static_cast<String>(static_cast<int>(currentData->boost));
     sendCmd(bpt);
-    float boostTempF = (currentData->manifoldTempC * 9.0 / 5.0) + 32.0;
-    String btt = "bt.val=" + (String)(int)boostTempF;
+    const float boostTempF = (currentData->manifoldTempC * 9.0f / 5.0f) + 32.0f;
+    const String btt = "bt.val=" + static_cast<String>(static_cast<int>(boostTempF));
     sendCmd(btt);
-    sendCmd("throttle.val=" + (String)(int)currentData->throttlePercentage);
-    sendCmd("selGear.val=" + (String)currentData->selectedGear);
-    sendCmd("curGear.val=" + (String)currentData->currentGear);
-    sendCmd("reqRange.txt=\"" + (String)currentData->requestedRange + "\"");
-    sendCmd("load.val=" + (String)(int)currentData->load);
-    sendCmd("fuelPres.val=" + (String)(int)currentData->fuelPressure);
+    sendCmd("throttle.val=" + static_cast<String>(currentData->throttlePercentage));
+    sendCmd("selGear.val=" + static_cast<String>(currentData->selectedGear));
+    sendCmd("curGear.val=" + static_cast<String>(currentData->currentGear));
+    sendCmd("reqRange.txt=\"" + static_cast<String>(currentData->requestedRange) + "\"");
+    sendCmd("load.val=" + static_cast<String>(currentData->load));
+    sendCmd("fuelPres.val=" + static_cast<String>(static_cast<int>(currentData->fuelPressure)));
       
     sendBatch();
     last100msUpdate = currentMillis;
@@ -115,18 +111,18 @@ void Nextion::updateDisplayData(AppData *currentData) {
             "\"");
     sendCmd("tr.txt=\"" + formatNumber(currentData->tireRotation) + "\"");
     sendCmd("transPres.val=" +
-            (String)(int)currentData->transmissionPressure);
-    double coolTempF = ((double)currentData->coolantTemp * 9 / 5) + 32;
-    sendCmd("h20t.val=" + (String)(int)coolTempF);
-    double coolTemp2F = ((double)currentData->coolantTemp2 * 9 / 5) + 32;
-    sendCmd("h20t2.val=" + (String)(int)coolTemp2F);
-    double oilTempF = ((double)currentData->oilTempC * 9 / 5) + 32;
-    sendCmd("ot.val=" + (String)(int)oilTempF);
-    sendCmd("fueltmp.val=" + (String)currentData->fuelTempF);
-    double transmissionTemperateDegrees =
-        (((double)currentData->transmissionTempC * 9 / 5) + 32);
-    sendCmd("trantemp.val=" + (String)(int)transmissionTemperateDegrees);
-    sendCmd("oilPres.val=" + (String)(int)currentData->oilPressureInPsi);
+            static_cast<String>(currentData->transmissionPressure));
+    const double coolTempF = (static_cast<double>(currentData->coolantTemp) * 9 / 5) + 32;
+    sendCmd("h20t.val=" + static_cast<String>(static_cast<int>(coolTempF)));
+    const double coolTemp2F = (static_cast<double>(currentData->coolantTemp2) * 9 / 5) + 32;
+    sendCmd("h20t2.val=" + static_cast<String>(static_cast<int>(coolTemp2F)));
+    const double oilTempF = (static_cast<double>(currentData->oilTempC) * 9 / 5) + 32;
+    sendCmd("ot.val=" + static_cast<String>(static_cast<int>(oilTempF)));
+    sendCmd("fueltmp.val=" + static_cast<String>(currentData->fuelTempF));
+    const double transmissionTemperateDegrees =
+        ((static_cast<double>(currentData->transmissionTempC) * 9 / 5) + 32);
+    sendCmd("trantemp.val=" + static_cast<String>(static_cast<int>(transmissionTemperateDegrees)));
+    sendCmd("oilPres.val=" + static_cast<String>(static_cast<int>(currentData->oilPressureInPsi)));
 
     // Send batch commands
     sendBatch();
@@ -181,7 +177,7 @@ void Nextion::processCommands(AppData *currentData) {
       }
       serialBuffer = "";
     } else {
-      serialBuffer += (char)newData;
+      serialBuffer += static_cast<char>(newData);
     }
   }
 }

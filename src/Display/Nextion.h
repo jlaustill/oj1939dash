@@ -1,8 +1,8 @@
 //
 // Created by jlaustill on 8/27/21.
 //
-#ifndef OPCM_NEXTION_H
-#define OPCM_NEXTION_H
+#ifndef O_J1939_DASH_NEXTION_H
+#define O_J1939_DASH_NEXTION_H
 
 #include <Arduino.h>
 #include "../../include/AppData.h"
@@ -13,9 +13,9 @@ class Nextion {
   static void updateDisplayData(AppData *currentData);
 
  private:
-  static void sendCmd(String cmd);
+  static void sendCmd(const String& cmd);
   static void sendBatch();
   static void processCommands(AppData *currentData);
 };
 
-#endif  // OPCM_NEXTION_H
+#endif  // O_J1939_DASH_NEXTION_H
