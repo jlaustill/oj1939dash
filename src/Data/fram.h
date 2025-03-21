@@ -1,19 +1,21 @@
-#ifndef OPCM_FRAM_H
-#define OPCM_FRAM_H
+#ifndef O_J1939_DASH_FRAM_H
+#define O_J1939_DASH_FRAM_H
 
-#include <SPI.h>
 #include "AppData.h"
 #include "Adafruit_FRAM_SPI.h"
 
-class OPCM_Fram {
- private:
-  static bool isInitialized;
-  static Adafruit_FRAM_SPI fram;
+class O_J1939_Dash_Fram
+{
+private:
+ static bool isInitialized;
+ static Adafruit_FRAM_SPI fram;
+ static unsigned long lastWriteTime; // Track last write time
 
- public:
-  static void initialize();
-  static void saveData(AppData *currentData);
-  static AppData loadData();
+public:
+ static bool initialize();
+ static bool saveData(AppData* currentData);
+ static bool loadData(AppData* currentData); // Changed to pass by reference
+ static bool isReady() { return isInitialized; }
 };
 
-#endif  // OPCM_FRAM_H
+#endif  // O_J1939_DASH_FRAM_H

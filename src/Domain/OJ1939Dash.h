@@ -1,4 +1,4 @@
-class opcm
+class OJ1939Dash
 {
 private:
     static unsigned long count;

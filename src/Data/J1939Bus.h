@@ -1,8 +1,8 @@
 //
 // Created by jlaustill on 8/21/21.
 //
-#ifndef O_J1939_DASH_CUMMINS_BUS_H
-#define O_J1939_DASH_CUMMINS_BUS_H
+#ifndef O_J1939_DASH_J1939_BUS_H
+#define O_J1939_DASH_J1939_BUS_H
 #include <FlexCAN_T4.h>
 #include <J1939Message.h>
 #include <AppData.h>
@@ -47,4 +47,4 @@ public:
     static J1939Message ElectronicTransmissionController1Pgn;
 };
 
-#endif  // O_J1939_DASH_CUMMINS_BUS_H
+#endif  // O_J1939_DASH_J1939_BUS_H

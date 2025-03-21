@@ -4,14 +4,14 @@
 
 #include <Arduino.h>
 
-#include "Domain/opcm.h"
+#include "Domain/OJ1939Dash.h"
 
 void setup()
 {
-    opcm::setup();
+    OJ1939Dash::setup();
 }
 
 __attribute__((unused)) void loop()
 {
-    opcm::loop();
+    OJ1939Dash::loop();
 }
