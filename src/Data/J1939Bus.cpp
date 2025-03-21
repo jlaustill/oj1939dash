@@ -15,7 +15,7 @@ static FlexCAN_T4<CAN1, RX_SIZE_256> Can1;
 #include <cstdint>
 #include <unordered_set>
 
-#include "CumminsBus.h"
+#include "J1939Bus.h"
 #include "J1939/pgn_constants.h"
 
 J1939Message message;
@@ -26,10 +26,10 @@ uint32_t lastJ1939Request = 0;
 
 boolean warmedUp = false;
 
-AppData* CumminsBus::appData;
+AppData* J1939Bus::appData;
 
 // methods that have been moved to the CumminsBus class
-J1939Message CumminsBus::ElectronicTransmissionController1Pgn{};
+J1939Message J1939Bus::ElectronicTransmissionController1Pgn{};
 
 // methods that need to be moved to the CumminsBus class
 volatile CanMessage pgn65262{
@@ -142,23 +142,23 @@ void logMessage(const String& messageName, const CAN_message_t& msg)
     Serial.print(" ");
   }
   Serial.print(" RPM: ");
-  Serial.print(CumminsBus::appData->rpm);
+  Serial.print(J1939Bus::appData->rpm);
   Serial.print(" Load: ");
-  Serial.print(CumminsBus::appData->load);
+  Serial.print(J1939Bus::appData->load);
   Serial.print(" Throttle: ");
-  Serial.print(CumminsBus::appData->throttlePercentage);
+  Serial.print(J1939Bus::appData->throttlePercentage);
   Serial.print(" MPH: ");
-  Serial.print(CumminsBus::appData->speedInMph);
+  Serial.print(J1939Bus::appData->speedInMph);
   Serial.print(" Gear: ");
-  Serial.print(CumminsBus::appData->currentGear);
+  Serial.print(J1939Bus::appData->currentGear);
   Serial.print(" Timing: ");
-  Serial.print(CumminsBus::appData->timing);
+  Serial.print(J1939Bus::appData->timing);
   Serial.print(" Fuel%: ");
-  Serial.print(CumminsBus::appData->fuelPercentage);
+  Serial.print(J1939Bus::appData->fuelPercentage);
   Serial.print(" Fuel Pres: ");
-  Serial.print(CumminsBus::appData->fuelPressure);
+  Serial.print(J1939Bus::appData->fuelPressure);
   Serial.print(" Fuel Temp: ");
-  Serial.print(CumminsBus::appData->fuelTempF);
+  Serial.print(J1939Bus::appData->fuelTempF);
 
   Serial.println();
 }
@@ -336,7 +336,7 @@ void CumminsBusSniff(const CAN_message_t& msg)
 
   case 61442:
     // Electronic Transmission Controller 1 - ETC1 -
-    updateJ1939Message(&CumminsBus::ElectronicTransmissionController1Pgn,
+    updateJ1939Message(&J1939Bus::ElectronicTransmissionController1Pgn,
                        msg);
     break;
 
@@ -413,7 +413,7 @@ void updateMaxTiming()
     SeaDash::Floats::mapf<float>(static_cast<float>(RPM), 1200.0f, 3000.0f, 16.0f, 30.0f);
 }
 
-void CumminsBus::updateTiming(CAN_message_t& msg)
+void J1939Bus::updateTiming(CAN_message_t& msg)
 {
   // check coolant temp > 150
   if (!warmedUp)
@@ -424,16 +424,16 @@ void CumminsBus::updateTiming(CAN_message_t& msg)
   }
 
   // get max timing for rpm
-  CumminsBus::updateRpms();
-  CumminsBus::updateTiming();
+  updateRpms();
+  updateTiming();
   updateMaxTiming();
 
   // Serial.println("current timing -> " + (String)currentTiming + " max timing
   // " + (String)maxTiming);
 
   // get max of throttle and load
-  CumminsBus::updateThrottlePercentage();
-  CumminsBus::updateLoad();
+  updateThrottlePercentage();
+  updateLoad();
   maxOfThrottleAndLoad = throttlePercentage > load ? throttlePercentage : load;
   // map between current timing and max timing based on max of throttle and load
   newTiming = SeaDash::Floats::mapf<float>(static_cast<float>(maxOfThrottleAndLoad), 0.0f,
@@ -463,7 +463,7 @@ void CumminsBus::updateTiming(CAN_message_t& msg)
   Can1.write(msg);
 }
 
-void CumminsBus::updateTiming()
+void J1939Bus::updateTiming()
 {
   // compute timing advance
   Timing =
@@ -472,13 +472,13 @@ void CumminsBus::updateTiming()
   Timing = Timing / 128.0f;
 }
 
-float CumminsBus::getCurrentTiming()
+float J1939Bus::getCurrentTiming()
 {
   updateTiming();
   return Timing;
 }
 
-float CumminsBus::getCurrentFuelPressurePsi()
+float J1939Bus::getCurrentFuelPressurePsi()
 {
   auto fuelPressure = static_cast<float>(pgn65263_149.data[0] * 4);
   fuelPressure /= 6.895;
@@ -488,14 +488,14 @@ float CumminsBus::getCurrentFuelPressurePsi()
   return fuelPressure;
 }
 
-byte CumminsBus::getTransmissionTempC()
+byte J1939Bus::getTransmissionTempC()
 {
   const std::uint16_t tempRaw = pgn65272.data[5] << 8 | pgn65272.data[4];
   const float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
   return static_cast<byte>(transmissionTemp);
 }
 
-float CumminsBus::getCurrentFuelPercentage()
+float J1939Bus::getCurrentFuelPercentage()
 {
   // Fuel compute
   FuelPercentage = static_cast<float>((message256.data[1] << 8) | message256.data[0]);
@@ -504,51 +504,51 @@ float CumminsBus::getCurrentFuelPercentage()
   return FuelPercentage;
 }
 
-void CumminsBus::updateThrottlePercentage()
+void J1939Bus::updateThrottlePercentage()
 {
   throttlePercentage = static_cast<byte>(static_cast<float>(pgn61443.data[1]) * .4f); // looking good!
 }
 
-int CumminsBus::getCurrentThrottlePercentage()
+int J1939Bus::getCurrentThrottlePercentage()
 {
   updateThrottlePercentage();
   return throttlePercentage;
 }
 
-void CumminsBus::updateLoad()
+void J1939Bus::updateLoad()
 {
   load = static_cast<byte>(static_cast<float>(pgn61443.data[2]) * 0.8f); // looking good!
 }
 
-int CumminsBus::getCurrentLoad()
+int J1939Bus::getCurrentLoad()
 {
   updateLoad();
   return load;
 }
 
-void CumminsBus::updateRpms()
+void J1939Bus::updateRpms()
 {
   RPM = message256.data[7] << 8 |
     message256.data[6]; // convert from little endian
   RPM /= 4;
 }
 
-int CumminsBus::getCurrentRpms()
+int J1939Bus::getCurrentRpms()
 {
   updateRpms();
   return static_cast<int>(RPM);
 }
 
-float CumminsBus::getCurrentAMT() { return static_cast<float>(pgn65270.data[2]) - 40.0f; }
+float J1939Bus::getCurrentAMT() { return static_cast<float>(pgn65270.data[2]) - 40.0f; }
 
-float CumminsBus::getCurrentBoostInPsi()
+float J1939Bus::getCurrentBoostInPsi()
 {
   const float kpa = static_cast<float>(pgn65270.data[1]) * 2.0f;
   const float psi = static_cast<float>(kpa) / 6.895f;
   return psi;
 }
 
-float CumminsBus::getCurrentBoostTemp()
+float J1939Bus::getCurrentBoostTemp()
 {
   // Compute Boost Temperature
   auto boostTemp = static_cast<float>(pgn65129.data[0] << 8 | pgn65129.data[1]); // Raw
@@ -559,7 +559,7 @@ float CumminsBus::getCurrentBoostTemp()
   return boostTemp;
 }
 
-float CumminsBus::getCurrentEgtTemp()
+float J1939Bus::getCurrentEgtTemp()
 {
   auto egt = static_cast<float>(pgn65270.data[5] * 255);
   // Serial.print("EGT? 1 " + (String)pgn65270.data[5]);
@@ -592,7 +592,7 @@ float CumminsBus::getCurrentEgtTemp()
 //   return true;
 // }
 
-int CumminsBus::getCurrentWaterTemp()
+int J1939Bus::getCurrentWaterTemp()
 {
   waterTemp = pgn65262.data[0] - 40; // Confirmed!!!
   if (!warmedUp && waterTemp > 65)
@@ -623,14 +623,14 @@ int CumminsBus::getCurrentWaterTemp()
 //   return true;
 // }
 
-byte CumminsBus::getCurrentOilPressure()
+byte J1939Bus::getCurrentOilPressure()
 {
   // Compute Oil Pressure
   oilPressure = pgn65263.data[3] * 4 / 6.895; // Confirmed!!!
   return static_cast<byte>(oilPressure);
 }
 
-int CumminsBus::getCurrentFuelTemp()
+int J1939Bus::getCurrentFuelTemp()
 {
   // Compute Fuel Temperature
   fuelTemp = (message274.data[7] << 8) | message274.data[6]; // Raw
@@ -641,22 +641,22 @@ int CumminsBus::getCurrentFuelTemp()
   return static_cast<int>(fuelTemp);
 }
 
-char CumminsBus::getRequestedRange()
+char J1939Bus::getRequestedRange()
 {
   return static_cast<char>(pgn61445.data[4]);
 }
 
-int8_t CumminsBus::getCurrentGear()
+int8_t J1939Bus::getCurrentGear()
 {
   return static_cast<int8_t>(pgn61445.data[3] - 125);
 }
 
-int8_t CumminsBus::getSelectedGear()
+int8_t J1939Bus::getSelectedGear()
 {
   return static_cast<int8_t>(pgn61445.data[0] - 125);
 }
 
-void CumminsBus::initialize(AppData* _appData)
+void J1939Bus::initialize(AppData* _appData)
 {
   Serial.println("Cummins Bus initializing");
 
@@ -681,7 +681,7 @@ void CumminsBus::initialize(AppData* _appData)
 
 uint32_t currentMillis = millis();
 
-void CumminsBus::loop()
+void J1939Bus::loop()
 {
   // request PGN's every 1 second
   // if (currentMillis - last10ms >= 10) {
@@ -743,7 +743,7 @@ void CumminsBus::loop()
 
 SeaDash::Uint32::IncrementalCircularAverage speedAverage(10);
 
-byte CumminsBus::getVehicleSpeed()
+byte J1939Bus::getVehicleSpeed()
 {
   // Compute Vehicle Speed
   const uint32_t speedRaw =

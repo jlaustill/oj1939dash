@@ -4,7 +4,7 @@
 #include "opcm.h"
 #include <AppData.h>
 #include <Arduino.h>
-#include "Data/CumminsBus.h"
+#include "Data/J1939Bus.h"
 #include "Display/Nextion.h"
 
 #include "Data/fram.h"
@@ -12,19 +12,28 @@
 AppData currentData;
 String serialBuffer;
 
-float roundToTwo(const float var) {
+float roundToTwo(const float var)
+{
   const int value = static_cast<int>(var * 100.0f + .5f);
   return static_cast<float>(value) / 100.0f;
 }
 
-void opcm::newSweepValue() {
-  if (up == 1 && sweep < maxSweep) {
+void opcm::newSweepValue()
+{
+  if (up == 1 && sweep < maxSweep)
+  {
     sweep++;
-  } else if (up == 1 && sweep >= maxSweep) {
+  }
+  else if (up == 1 && sweep >= maxSweep)
+  {
     up = 0;
-  } else if (sweep > 0) {
+  }
+  else if (sweep > 0)
+  {
     sweep--;
-  } else {
+  }
+  else
+  {
     up = 1;
   }
 }
@@ -42,7 +51,8 @@ int opcm::up = 1;
 
 unsigned long loopCountLastMillis = 0;
 
-void opcm::setup() {
+void opcm::setup()
+{
   Serial.begin(115200);
   count = 0;
   lastMillis = millis();
@@ -55,7 +65,7 @@ void opcm::setup() {
 
   OPCM_Fram::initialize();
 
-  CumminsBus::initialize(&currentData);
+  J1939Bus::initialize(&currentData);
 
   currentData = OPCM_Fram::loadData();
 
@@ -76,38 +86,42 @@ void opcm::setup() {
   currentData.fuelPressure = 0.0;
   Nextion::initialize();
 }
+
 int newData = 0;
-void opcm::loop() {
+
+void opcm::loop()
+{
   thisMillis = millis();
   thisDuration = thisMillis - lastMillis;
   count++;
   newSweepValue();
 
-  CumminsBus::loop();
-  currentData.rpm = CumminsBus::getCurrentRpms();
-  currentData.coolantTemp = CumminsBus::getCurrentWaterTemp();
-  currentData.oilPressureInPsi = CumminsBus::getCurrentOilPressure();
-  currentData.fuelTempF = CumminsBus::getCurrentFuelTemp();
-  currentData.boost = CumminsBus::getCurrentBoostInPsi();
-  currentData.manifoldTempC = CumminsBus::getCurrentBoostTemp();
+  J1939Bus::loop();
+  currentData.rpm = J1939Bus::getCurrentRpms();
+  currentData.coolantTemp = J1939Bus::getCurrentWaterTemp();
+  currentData.oilPressureInPsi = J1939Bus::getCurrentOilPressure();
+  currentData.fuelTempF = J1939Bus::getCurrentFuelTemp();
+  currentData.boost = J1939Bus::getCurrentBoostInPsi();
+  currentData.manifoldTempC = J1939Bus::getCurrentBoostTemp();
 
-  currentData.timing = CumminsBus::getCurrentTiming();
-  currentData.fuelPercentage = CumminsBus::getCurrentFuelPercentage();
-  currentData.amt = CumminsBus::getCurrentAMT();
-  currentData.throttlePercentage = CumminsBus::getCurrentThrottlePercentage();
-  currentData.load = CumminsBus::getCurrentLoad();
-  currentData.transmissionTempC = CumminsBus::getTransmissionTempC();
-  currentData.speedInMph = CumminsBus::getVehicleSpeed();
-  currentData.requestedRange = CumminsBus::getRequestedRange();
-  currentData.currentGear = CumminsBus::getCurrentGear();
-  currentData.selectedGear = CumminsBus::getSelectedGear();
-  currentData.egt = CumminsBus::getCurrentEgtTemp();
-  currentData.fuelPressure = CumminsBus::getCurrentFuelPressurePsi();
+  currentData.timing = J1939Bus::getCurrentTiming();
+  currentData.fuelPercentage = J1939Bus::getCurrentFuelPercentage();
+  currentData.amt = J1939Bus::getCurrentAMT();
+  currentData.throttlePercentage = J1939Bus::getCurrentThrottlePercentage();
+  currentData.load = J1939Bus::getCurrentLoad();
+  currentData.transmissionTempC = J1939Bus::getTransmissionTempC();
+  currentData.speedInMph = J1939Bus::getVehicleSpeed();
+  currentData.requestedRange = J1939Bus::getRequestedRange();
+  currentData.currentGear = J1939Bus::getCurrentGear();
+  currentData.selectedGear = J1939Bus::getSelectedGear();
+  currentData.egt = J1939Bus::getCurrentEgtTemp();
+  currentData.fuelPressure = J1939Bus::getCurrentFuelPressurePsi();
 
   thisMileage += (static_cast<float>(currentData.speedInMph) / 3600000.0f *
-                  static_cast<float>(thisDuration));
+    static_cast<float>(thisDuration));
 
-  if (thisMileage >= 0.1 || (thisMillis - lastOdometerUpdate) > 10) {
+  if (thisMileage >= 0.1 || (thisMillis - lastOdometerUpdate) > 10)
+  {
     lastOdometerUpdate = thisMillis;
     currentData.odometer += thisMileage;
     currentData.tripA += thisMileage;
@@ -133,31 +147,41 @@ void opcm::loop() {
 
   lastMillis = thisMillis;
 
-  if (thisMillis - loopCountLastMillis > 1000) {
+  if (thisMillis - loopCountLastMillis > 1000)
+  {
     loopCountLastMillis = thisMillis;
-    Serial.println("Loop Count/Sec: " + static_cast<String>(count) + " Miles On Engine: " + static_cast<String>(currentData.milesOnEngine) + " RPM: " + static_cast<String>(currentData.rpm));
+    Serial.println(
+      "Loop Count/Sec: " + static_cast<String>(count) + " Miles On Engine: " + static_cast<String>(currentData.
+        milesOnEngine) + " RPM: " + static_cast<String>(currentData.rpm));
     count = 0;
   }
 
-  while (Serial.available()) {
+  while (Serial.available())
+  {
     newData = Serial.read();
-    if (newData == ';') {
+    if (newData == ';')
+    {
       Serial.println("Execute!" + serialBuffer);
-      if (serialBuffer == "resetTripA") {
+      if (serialBuffer == "resetTripA")
+      {
         Serial.println("reset trip A!");
         currentData.tripA = 0;
-      } else if (serialBuffer.indexOf("setOdometer") > 0) {
+      }
+      else if (serialBuffer.indexOf("setOdometer") > 0)
+      {
         const double newOdometerReading =
-            atof(serialBuffer
-                     .substring(serialBuffer.indexOf("=") + 1,
-                                serialBuffer.indexOf(";"))
-                     .c_str());
+          atof(serialBuffer
+               .substring(serialBuffer.indexOf("=") + 1,
+                          serialBuffer.indexOf(";"))
+               .c_str());
         currentData.odometer = newOdometerReading;
         Serial.print("Set Odometer = ");
         Serial.println(currentData.odometer);
       }
       serialBuffer = "";
-    } else {
+    }
+    else
+    {
       serialBuffer += static_cast<char>(newData);
     }
   }

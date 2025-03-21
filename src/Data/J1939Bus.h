@@ -15,7 +15,7 @@ struct CanMessage
     unsigned count;
 };
 
-class CumminsBus
+class J1939Bus
 {
 public:
     static AppData* appData;
