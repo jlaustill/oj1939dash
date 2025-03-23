@@ -137,6 +137,13 @@ void OJ1939Dash::loop()
   currentData.egt = J1939Bus::getCurrentEgtTemp();
   currentData.fuelPressure = J1939Bus::getCurrentFuelPressurePsi();
 
+  Serial.print("requestedRange ");
+  Serial.print(currentData.requestedRange);
+  Serial.print(" currentGear ");
+  Serial.print(currentData.currentGear);
+  Serial.print(" selectedGear ");
+  Serial.println(currentData.selectedGear);
+
   thisMileage += (static_cast<float>(currentData.speedInMph) / 3600000.0f *
     static_cast<float>(thisDuration));
 

@@ -26,14 +26,6 @@ struct DTCMessage
     bool valid = false;
 };
 
-struct CANBufferMessage
-{
-    uint32_t canId;
-    uint8_t len;
-    uint8_t buf[8];
-    bool valid = false;
-};
-
 class J1939Bus
 {
 public:
@@ -65,9 +57,9 @@ private:
     // Message storage
     static J1939Message currentMessage;
     static std::unordered_set<uint8_t> sourceAddresses;
-    static J1939Message ElectronicTransmissionController1Pgn;
 
     // CAN messages for different PGNs
+    static volatile CanMessage pgn61442;
     static volatile CanMessage pgn65262;
     static volatile CanMessage pgn65262_149;
     static volatile CanMessage pgn65263;
@@ -141,15 +133,15 @@ private:
     static void processDTCMessages();
 
     // General CAN message buffer
-    static const size_t CAN_BUFFER_SIZE = 128; // Larger than DTC buffer
-    static CANBufferMessage canBuffer[CAN_BUFFER_SIZE];
-    static volatile size_t canBufferHead;
-    static volatile size_t canBufferTail;
+    static const uint8_t CAN_BUFFER_SIZE = 255; // Larger than DTC buffer
+    static CAN_message_t canBuffer[CAN_BUFFER_SIZE];
+    static volatile uint8_t canBufferHead;
+    static volatile uint8_t canBufferTail;
     static volatile bool canBufferFull;
 
     // CAN buffer methods
     static bool addToCANBuffer(const CAN_message_t& msg);
-    static bool getFromCANBuffer(CANBufferMessage& message);
+    static bool getFromCANBuffer(CAN_message_t& message);
     static void processCANMessages();
     static bool requestPgnWithTimeout(uint32_t pgn, unsigned long timeoutMs);
 };
