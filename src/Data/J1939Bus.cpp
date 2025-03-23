@@ -22,17 +22,17 @@ AppData* J1939Bus::appData = nullptr;
 
 // Initialize CAN message containers
 volatile CanMessage J1939Bus::pgn65262 = {0x67, 0x8, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, 0};
-volatile CanMessage J1939Bus::pgn65262_149{};
-volatile CanMessage J1939Bus::pgn65263{};
-volatile CanMessage J1939Bus::pgn65263_149{};
-volatile CanMessage J1939Bus::pgn65272{};
-volatile CanMessage J1939Bus::pgn65129{};
-volatile CanMessage J1939Bus::pgn61442{};
-volatile CanMessage J1939Bus::pgn61445{};
-volatile CanMessage J1939Bus::message256{};
-volatile CanMessage J1939Bus::message274{};
+volatile CanMessage J1939Bus::pgn65262_149{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65263{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65263_149{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65272{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65129{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn61442{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn61445{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::message256{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::message274{0x00, 0x8, {}, 0};
 volatile CanMessage J1939Bus::pgn61443 = {0x67, 0x8, {0xF1, 0x0, 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 0};
-volatile CanMessage J1939Bus::pgn65270{};
+volatile CanMessage J1939Bus::pgn65270{0x00, 0x8, {}, 0};
 CAN_message_t J1939Bus::msg;
 
 // Initialize sensor data
@@ -171,7 +171,7 @@ void J1939Bus::processDTCMessages()
 }
 
 // Add messages to the CAN buffer
-bool J1939Bus::addToCANBuffer(const CAN_message_t& _msg)
+bool J1939Bus::addToCANBuffer(const CAN_message_t& msg)
 {
     if (canBufferFull)
     {
@@ -180,10 +180,10 @@ bool J1939Bus::addToCANBuffer(const CAN_message_t& _msg)
     }
 
     // Copy message data to the buffer
-    canBuffer[canBufferHead] = _msg;
+    canBuffer[canBufferHead] = msg;
 
     // Move head pointer
-    uint8_t nextHead = (canBufferHead + 1) % CAN_BUFFER_SIZE;
+    const uint8_t nextHead = (canBufferHead + 1) % CAN_BUFFER_SIZE;
     canBufferHead = nextHead;
 
     // Check if buffer is full
@@ -261,7 +261,8 @@ void CumminsBusSniff(const CAN_message_t& _msg)
 void J1939Bus::updateTiming()
 {
     // compute timing advance
-    Timing = static_cast<float>(message256.data[5] << 8 | message256.data[4]); // convert from little endian
+    Timing = static_cast<float>(SeaDash::Bytes::combine2Bytes(message256.data[5], message256.data[4]));
+    // convert from little endian
     Timing = Timing / 128.0f;
 }
 
@@ -274,7 +275,7 @@ float J1939Bus::getCurrentTiming()
 float J1939Bus::getCurrentFuelPressurePsi()
 {
     auto fuelPressure = static_cast<float>(pgn65263_149.data[0] * 4);
-    fuelPressure /= 6.895;
+    fuelPressure /= 6.895f;
     if (fuelPressure > maxFuelPressure) maxFuelPressure = fuelPressure;
     if (fuelPressure < minFuelPressure) minFuelPressure = fuelPressure;
     return fuelPressure;
@@ -282,7 +283,7 @@ float J1939Bus::getCurrentFuelPressurePsi()
 
 byte J1939Bus::getTransmissionTempC()
 {
-    const std::uint16_t tempRaw = pgn65272.data[5] << 8 | pgn65272.data[4];
+    const uint16_t tempRaw = SeaDash::Bytes::combine2Bytes(pgn65272.data[5], pgn65272.data[4]);
     const float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
     return static_cast<byte>(transmissionTemp);
 }
@@ -290,7 +291,7 @@ byte J1939Bus::getTransmissionTempC()
 float J1939Bus::getCurrentFuelPercentage()
 {
     // Fuel compute
-    FuelPercentage = static_cast<float>((message256.data[1] << 8) | message256.data[0]);
+    FuelPercentage = static_cast<float>(SeaDash::Bytes::combine2Bytes(message256.data[1], message256.data[0]));
     FuelPercentage = FuelPercentage * 100.0f / 4096.0f; // 4095 is max fuel allowed by pump
     return FuelPercentage;
 }
@@ -319,7 +320,7 @@ int J1939Bus::getCurrentLoad()
 
 void J1939Bus::updateRpms()
 {
-    RPM = message256.data[7] << 8 | message256.data[6]; // convert from little endian
+    RPM = SeaDash::Bytes::combine2Bytes(message256.data[7], message256.data[6]); // convert from little endian
     RPM /= 4;
 }
 
@@ -344,10 +345,10 @@ float J1939Bus::getCurrentBoostInPsi()
 float J1939Bus::getCurrentBoostTemp()
 {
     // Compute Boost Temperature
-    auto boostTemp = static_cast<float>(pgn65129.data[0] << 8 | pgn65129.data[1]); // Raw
+    auto boostTemp = static_cast<float>(SeaDash::Bytes::combine2Bytes(pgn65129.data[0], pgn65129.data[1])); // Raw
     boostTemp = boostTemp * 0.03125f; // Offset
     boostTemp = boostTemp - 273.0f; // Celsius
-    boostTemp = ((boostTemp * 9) / 5) + 32; // Fahrenheit
+    boostTemp = boostTemp * 9.0f / 5.0f + 32.0f; // Fahrenheit
 
     return boostTemp;
 }
@@ -378,7 +379,7 @@ byte J1939Bus::getCurrentOilPressure()
 int J1939Bus::getCurrentFuelTemp()
 {
     // Compute Fuel Temperature
-    fuelTemp = (message274.data[7] << 8) | message274.data[6]; // Raw
+    fuelTemp = SeaDash::Bytes::combine2Bytes(message274.data[7], message274.data[6]); // Raw
     fuelTemp = fuelTemp / 16; // Kelvin
     fuelTemp = fuelTemp - 273.15; // Celsius
     fuelTemp = ((fuelTemp * 9) / 5) + 32; // Fahrenheit
@@ -455,10 +456,12 @@ void J1939Bus::processCANMessages()
 
             case 65263:
                 // PGN: 65263
-                updateMessage(&pgn65263, message);
+                if (j1939Msg.sourceAddress == 149)
+                {
+                    updateMessage(&pgn65263, message);
+                }
                 break;
             case 65270:
-                // PGN: 65270
                 updateMessage(&pgn65270, message);
                 break;
 
@@ -509,7 +512,7 @@ bool J1939Bus::initialize(AppData* _appData)
     Can1.onReceive(CumminsBusSniff);
 
     // Give the CAN controller a moment to initialize
-    unsigned long startTime = millis();
+    const unsigned long startTime = millis();
     bool canInitialized = false;
 
     // Try sending a dummy message to see if CAN is ready
@@ -571,7 +574,7 @@ bool J1939Bus::requestPgnWithTimeout(const uint32_t pgn, const unsigned long tim
     msg.buf[1] = SeaDash::Bytes::getNthByte(pgn, 2);
     msg.buf[2] = SeaDash::Bytes::getNthByte(pgn, 3);
 
-    unsigned long startTime = millis();
+    const unsigned long startTime = millis();
     while (!Can1.write(msg))
     {
         if (millis() - startTime > timeoutMs)
