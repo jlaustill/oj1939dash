@@ -84,29 +84,6 @@ void OJ1939Dash::setup()
     Serial.println("Failed to load odometer data!");
   }
 
-  currentData.rpm = 0;
-  currentData.coolantTemp = 0;
-  currentData.speedInMph = 0;
-  currentData.oilPressureInPsi = 0;
-  currentData.fuelTempF = 0;
-  currentData.boost = 0;
-  currentData.manifoldTempC = 0;
-
-  currentData.throttlePercentage = 0;
-  currentData.load = 0;
-  currentData.fuelPressure = 0.0;
-
-  currentData.transmissionTempC = 0;
-  currentData.oilTempC = 0;
-  currentData.coolantTemp2 = 0;
-  currentData.egt = 0;
-  currentData.tripA = 0;
-  currentData.tripB = 0;
-  currentData.odometer = 0;
-  currentData.requestedRange = 'P';
-  currentData.currentGear = 0;
-  currentData.selectedGear = 0;
-
   if (!Nextion::initialize())
   {
     Serial.println("Warning: Nextion display initialization failed");
