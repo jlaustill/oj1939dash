@@ -87,18 +87,25 @@ void OJ1939Dash::setup()
   currentData.rpm = 0;
   currentData.coolantTemp = 0;
   currentData.speedInMph = 0;
-  currentData.transmissionPressure = 0;
   currentData.oilPressureInPsi = 0;
   currentData.fuelTempF = 0;
   currentData.boost = 0;
   currentData.manifoldTempC = 0;
 
-  currentData.timing = 0;
-  currentData.fuelPercentage = 0;
-  currentData.amt = 0;
   currentData.throttlePercentage = 0;
   currentData.load = 0;
   currentData.fuelPressure = 0.0;
+
+  currentData.transmissionTempC = 0;
+  currentData.oilTempC = 0;
+  currentData.coolantTemp2 = 0;
+  currentData.egt = 0;
+  currentData.tripA = 0;
+  currentData.tripB = 0;
+  currentData.odometer = 0;
+  currentData.requestedRange = 'P';
+  currentData.currentGear = 0;
+  currentData.selectedGear = 0;
 
   if (!Nextion::initialize())
   {
@@ -124,9 +131,6 @@ void OJ1939Dash::loop()
   currentData.boost = J1939Bus::getCurrentBoostInPsi();
   currentData.manifoldTempC = J1939Bus::getCurrentBoostTemp();
 
-  currentData.timing = J1939Bus::getCurrentTiming();
-  currentData.fuelPercentage = J1939Bus::getCurrentFuelPercentage();
-  currentData.amt = J1939Bus::getCurrentAMT();
   currentData.throttlePercentage = J1939Bus::getCurrentThrottlePercentage();
   currentData.load = J1939Bus::getCurrentLoad();
   currentData.transmissionTempC = J1939Bus::getTransmissionTempC();
@@ -136,13 +140,6 @@ void OJ1939Dash::loop()
   currentData.selectedGear = J1939Bus::getSelectedGear();
   currentData.egt = J1939Bus::getCurrentEgtTemp();
   currentData.fuelPressure = J1939Bus::getCurrentFuelPressurePsi();
-
-  Serial.print("requestedRange ");
-  Serial.print(currentData.requestedRange);
-  Serial.print(" currentGear ");
-  Serial.print(currentData.currentGear);
-  Serial.print(" selectedGear ");
-  Serial.println(currentData.selectedGear);
 
   thisMileage += (static_cast<float>(currentData.speedInMph) / 3600000.0f *
     static_cast<float>(thisDuration));
