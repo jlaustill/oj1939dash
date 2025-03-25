@@ -42,18 +42,11 @@ volatile double J1939Bus::oilPressure = 0;
 volatile double J1939Bus::waterTemp = 0;
 volatile byte J1939Bus::load = 0;
 volatile byte J1939Bus::throttlePercentage = 0;
-volatile float J1939Bus::Timing = 0;
 volatile float J1939Bus::FuelPercentage = 0;
 
 // Initialize fuel pressure tracking
 volatile float J1939Bus::minFuelPressure = 99999999.0;
 volatile float J1939Bus::maxFuelPressure = 0.0;
-
-// Initialize timing data
-volatile float J1939Bus::maxTiming = 15.0f;
-volatile int J1939Bus::maxOfThrottleAndLoad = 0;
-volatile float J1939Bus::newTiming = 15.0f;
-volatile unsigned short J1939Bus::shortTimingValue = 0;
 
 // Initialize ID tracking
 volatile int J1939Bus::ids[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -231,6 +224,7 @@ void J1939Bus::updateMessage(volatile CanMessage* _messageToUpdate, const CAN_me
     _messageToUpdate->data[6] = _msg.buf[6];
     _messageToUpdate->data[7] = _msg.buf[7];
     _messageToUpdate->count++;
+    _messageToUpdate->lastMessageReceived = millis();
 }
 
 void J1939Bus::requestPgn(const uint32_t pgn)
@@ -258,22 +252,16 @@ void CumminsBusSniff(const CAN_message_t& _msg)
     J1939Bus::addToCANBuffer(_msg);
 }
 
-void J1939Bus::updateTiming()
-{
-    // compute timing advance
-    Timing = static_cast<float>(SeaDash::Bytes::combine2Bytes(message256.data[5], message256.data[4]));
-    // convert from little endian
-    Timing = Timing / 128.0f;
-}
-
-float J1939Bus::getCurrentTiming()
-{
-    updateTiming();
-    return Timing;
-}
-
 float J1939Bus::getCurrentFuelPressurePsi()
 {
+    if (pgn65263_149.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65263_149.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     auto fuelPressure = static_cast<float>(pgn65263_149.data[0] * 4);
     fuelPressure /= 6.895f;
     if (fuelPressure > maxFuelPressure) maxFuelPressure = fuelPressure;
@@ -283,6 +271,14 @@ float J1939Bus::getCurrentFuelPressurePsi()
 
 byte J1939Bus::getTransmissionTempC()
 {
+    if (pgn65272.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65272.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     const uint16_t tempRaw = SeaDash::Bytes::combine2Bytes(pgn65272.data[5], pgn65272.data[4]);
     const float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
     return static_cast<byte>(transmissionTemp);
@@ -290,6 +286,14 @@ byte J1939Bus::getTransmissionTempC()
 
 float J1939Bus::getCurrentFuelPercentage()
 {
+    if (message256.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - message256.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Fuel compute
     FuelPercentage = static_cast<float>(SeaDash::Bytes::combine2Bytes(message256.data[1], message256.data[0]));
     FuelPercentage = FuelPercentage * 100.0f / 4096.0f; // 4095 is max fuel allowed by pump
@@ -298,6 +302,16 @@ float J1939Bus::getCurrentFuelPercentage()
 
 void J1939Bus::updateThrottlePercentage()
 {
+    if (pgn61443.count == 0)
+    {
+        throttlePercentage = 0;
+        return;
+    }
+    if (millis() - pgn61443.lastMessageReceived > 1000)
+    {
+        throttlePercentage = 0;
+        return;
+    }
     throttlePercentage = static_cast<byte>(static_cast<float>(pgn61443.data[1]) * .4f);
 }
 
@@ -309,6 +323,16 @@ int J1939Bus::getCurrentThrottlePercentage()
 
 void J1939Bus::updateLoad()
 {
+    if (pgn61443.count == 0)
+    {
+        load = 0;
+        return;
+    }
+    if (millis() - pgn61443.lastMessageReceived > 1000)
+    {
+        load = 0;
+        return;
+    }
     load = static_cast<byte>(static_cast<float>(pgn61443.data[2]) * 0.8f);
 }
 
@@ -320,6 +344,16 @@ int J1939Bus::getCurrentLoad()
 
 void J1939Bus::updateRpms()
 {
+    if (message256.count == 0)
+    {
+        RPM = 0;
+        return;
+    }
+    if (millis() - message256.lastMessageReceived > 1000)
+    {
+        RPM = 0;
+        return;
+    }
     RPM = SeaDash::Bytes::combine2Bytes(message256.data[7], message256.data[6]); // convert from little endian
     RPM /= 4;
 }
@@ -330,13 +364,16 @@ int J1939Bus::getCurrentRpms()
     return static_cast<int>(RPM);
 }
 
-float J1939Bus::getCurrentAMT()
-{
-    return static_cast<float>(pgn65270.data[2]) - 40.0f;
-}
-
 float J1939Bus::getCurrentBoostInPsi()
 {
+    if (pgn65270.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65270.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     const float kpa = static_cast<float>(pgn65270.data[1]) * 2.0f;
     const float psi = static_cast<float>(kpa) / 6.895f;
     return psi;
@@ -344,6 +381,14 @@ float J1939Bus::getCurrentBoostInPsi()
 
 float J1939Bus::getCurrentBoostTemp()
 {
+    if (pgn65129.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65129.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Boost Temperature
     auto boostTemp = static_cast<float>(SeaDash::Bytes::combine2Bytes(pgn65129.data[0], pgn65129.data[1])); // Raw
     boostTemp = boostTemp * 0.03125f; // Offset
@@ -355,6 +400,14 @@ float J1939Bus::getCurrentBoostTemp()
 
 float J1939Bus::getCurrentEgtTemp()
 {
+    if (pgn65270.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65270.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     auto egt = static_cast<float>(pgn65270.data[5] * 255);
     egt += static_cast<float>(pgn65270.data[6]);
     egt *= 0.03125f;
@@ -365,12 +418,28 @@ float J1939Bus::getCurrentEgtTemp()
 
 int J1939Bus::getCurrentWaterTemp()
 {
+    if (pgn65262.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65262.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     waterTemp = pgn65262.data[0] - 40;
     return static_cast<int>(waterTemp);
 }
 
 byte J1939Bus::getCurrentOilPressure()
 {
+    if (pgn65263.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65263.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Oil Pressure
     oilPressure = pgn65263.data[3] * 4 / 6.895; // Confirmed!!!
     return static_cast<byte>(oilPressure);
@@ -378,6 +447,14 @@ byte J1939Bus::getCurrentOilPressure()
 
 int J1939Bus::getCurrentFuelTemp()
 {
+    if (message274.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - message274.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Fuel Temperature
     fuelTemp = SeaDash::Bytes::combine2Bytes(message274.data[7], message274.data[6]); // Raw
     fuelTemp = fuelTemp / 16; // Kelvin
@@ -389,16 +466,40 @@ int J1939Bus::getCurrentFuelTemp()
 
 char J1939Bus::getRequestedRange()
 {
+    if (pgn61445.count == 0)
+    {
+        return 'P';
+    }
+    if (millis() - pgn61445.lastMessageReceived > 1000)
+    {
+        return 'P';
+    }
     return static_cast<char>(pgn61445.data[4]);
 }
 
 int8_t J1939Bus::getCurrentGear()
 {
+    if (pgn61445.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn61445.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     return static_cast<int8_t>(pgn61445.data[3] - 125);
 }
 
 int8_t J1939Bus::getSelectedGear()
 {
+    if (pgn61445.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn61445.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     return static_cast<int8_t>(pgn61445.data[0] - 125);
 }
 
@@ -611,7 +712,11 @@ void J1939Bus::loop()
 
 byte J1939Bus::getVehicleSpeed()
 {
-    if (pgn61442.count > 0)
+    if (pgn61442.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn61442.lastMessageReceived > 1000)
     {
         return 0;
     }

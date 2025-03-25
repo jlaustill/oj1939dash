@@ -115,7 +115,6 @@ void Nextion::updateDisplayData(const AppData* currentData)
   {
     sendCmd("mph.val=" + static_cast<String>(currentData->speedInMph));
     sendCmd("rpm.val=" + static_cast<String>(currentData->rpm));
-    // sendCmd("egt.val=" + static_cast<String>(static_cast<int>(currentData->egt)));
     const String bpt = "bp.val=" + static_cast<String>(static_cast<int>(currentData->boost));
     sendCmd(bpt);
     const float boostTempF = (currentData->manifoldTempC * 9.0f / 5.0f) + 32.0f;

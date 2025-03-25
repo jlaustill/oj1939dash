@@ -12,10 +12,11 @@
 
 struct CanMessage
 {
-    byte id;
-    byte length;
-    byte data[8];
-    unsigned count;
+    byte id = 0;
+    byte length = 8;
+    byte data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    unsigned count = 0;
+    unsigned long lastMessageReceived = 0;
 };
 
 struct DTCMessage
@@ -39,11 +40,9 @@ public:
     static float getCurrentBoostTemp();
     static int getCurrentLoad();
     static int getCurrentThrottlePercentage();
-    static float getCurrentAMT();
     static float getCurrentFuelPercentage();
     static float getCurrentEgtTemp();
     static float getCurrentFuelPressurePsi();
-    static float getCurrentTiming();
     static byte getTransmissionTempC();
     static byte getVehicleSpeed();
     static char getRequestedRange();
@@ -80,18 +79,11 @@ private:
     static volatile double waterTemp;
     static volatile byte load;
     static volatile byte throttlePercentage;
-    static volatile float Timing;
     static volatile float FuelPercentage;
 
     // Fuel pressure tracking
     static volatile float minFuelPressure;
     static volatile float maxFuelPressure;
-
-    // Timing data
-    static volatile float maxTiming;
-    static volatile int maxOfThrottleAndLoad;
-    static volatile float newTiming;
-    static volatile unsigned short shortTimingValue;
 
     // ID tracking
     static volatile int ids[8];
@@ -114,7 +106,6 @@ private:
     static void updateRpms();
     static void updateLoad();
     static void updateThrottlePercentage();
-    static void updateTiming();
 
     // Friend function for CAN interrupt handler
     friend void CumminsBusSniff(const CAN_message_t& _msg);
