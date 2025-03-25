@@ -41,7 +41,7 @@ bool Nextion::initialize()
   Serial2.begin(115200);
 
   // Wait for Serial2 with timeout
-  unsigned long startTime = millis();
+  const unsigned long startTime = millis();
   while (!Serial2)
   {
     if (millis() - startTime > INIT_TIMEOUT)
@@ -75,7 +75,7 @@ String formatNumber(const double number)
   snprintf(buffer, sizeof(buffer), "%.2f", number);
 
   int numDigits = 0;
-  size_t periodIndex = strcspn(buffer, "."); // Find the position of the decimal point
+  const size_t periodIndex = strcspn(buffer, "."); // Find the position of the decimal point
 
   for (size_t i = 0; i < periodIndex; i++)
   {
@@ -92,10 +92,9 @@ String formatNumber(const double number)
     finalText += buffer[i];
 
     // Decrease the distance from the decimal point
-    size_t distance = numDigits - i - 1;
 
     // Insert a comma every three decimal positions away from the decimal point
-    if ((distance > 0) && (distance % 3 == 0))
+    if (const size_t distance = numDigits - i - 1; distance > 0 && distance % 3 == 0)
     {
       finalText += ',';
     }
@@ -125,9 +124,13 @@ void Nextion::updateDisplayData(const AppData* currentData)
     sendCmd("throttle.val=" + static_cast<String>(currentData->throttlePercentage));
     sendCmd("selGear.val=" + static_cast<String>(currentData->selectedGear));
     sendCmd("curGear.val=" + static_cast<String>(currentData->currentGear));
-    sendCmd("reqRange.txt=\"" + static_cast<String>(currentData->requestedRange) + "\"");
-    sendCmd("load.val=" + static_cast<String>(currentData->load));
+    const String reqRangeText = "reqRange.txt=\"" + static_cast<String>(currentData->requestedRange) + "\"";
+    sendCmd(reqRangeText);
+    const String loadCommand = "load.val=" + static_cast<String>(currentData->load);
+    sendCmd(loadCommand);
     sendCmd("fuelPres.val=" + static_cast<String>(static_cast<int>(currentData->fuelPressure)));
+    const String egtText = "egt.val=" + static_cast<String>(static_cast<int>(currentData->egt));
+    sendCmd(egtText);
 
     sendBatch();
     last100msUpdate = currentMillis;
@@ -162,7 +165,6 @@ void Nextion::updateDisplayData(const AppData* currentData)
       static_cast<double>(currentData->transmissionTempC) * 9 / 5 + 32;
     sendCmd("trantemp.val=" + static_cast<String>(static_cast<int>(transmissionTemperateDegrees)));
     sendCmd("oilPres.val=" + static_cast<String>(static_cast<int>(currentData->oilPressureInPsi)));
-    // ... other 1s updates ...
 
     // Send batch commands
     sendBatch();
