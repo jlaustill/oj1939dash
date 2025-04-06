@@ -8,7 +8,7 @@ class Nextion
 {
 public:
  static bool initialize(); // Return success/failure
- static void updateDisplayData(AppData* currentData);
+ static void updateDisplayData(const AppData* currentData);
 
 private:
  static void sendCmd(const String& cmd);

@@ -12,10 +12,11 @@
 
 struct CanMessage
 {
-    byte id;
-    byte length;
-    byte data[8];
-    unsigned count;
+    byte id = 0;
+    byte length = 8;
+    byte data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    unsigned count = 0;
+    unsigned long lastMessageReceived = 0;
 };
 
 struct DTCMessage
@@ -23,14 +24,6 @@ struct DTCMessage
     uint32_t canId;
     uint8_t sourceAddress;
     uint8_t data[8];
-    bool valid = false;
-};
-
-struct CANBufferMessage
-{
-    uint32_t canId;
-    uint8_t len;
-    uint8_t buf[8];
     bool valid = false;
 };
 
@@ -47,11 +40,9 @@ public:
     static float getCurrentBoostTemp();
     static int getCurrentLoad();
     static int getCurrentThrottlePercentage();
-    static float getCurrentAMT();
     static float getCurrentFuelPercentage();
     static float getCurrentEgtTemp();
     static float getCurrentFuelPressurePsi();
-    static float getCurrentTiming();
     static byte getTransmissionTempC();
     static byte getVehicleSpeed();
     static char getRequestedRange();
@@ -65,9 +56,9 @@ private:
     // Message storage
     static J1939Message currentMessage;
     static std::unordered_set<uint8_t> sourceAddresses;
-    static J1939Message ElectronicTransmissionController1Pgn;
 
     // CAN messages for different PGNs
+    static volatile CanMessage pgn61442;
     static volatile CanMessage pgn65262;
     static volatile CanMessage pgn65262_149;
     static volatile CanMessage pgn65263;
@@ -88,18 +79,11 @@ private:
     static volatile double waterTemp;
     static volatile byte load;
     static volatile byte throttlePercentage;
-    static volatile float Timing;
     static volatile float FuelPercentage;
 
     // Fuel pressure tracking
     static volatile float minFuelPressure;
     static volatile float maxFuelPressure;
-
-    // Timing data
-    static volatile float maxTiming;
-    static volatile int maxOfThrottleAndLoad;
-    static volatile float newTiming;
-    static volatile unsigned short shortTimingValue;
 
     // ID tracking
     static volatile int ids[8];
@@ -122,7 +106,6 @@ private:
     static void updateRpms();
     static void updateLoad();
     static void updateThrottlePercentage();
-    static void updateTiming();
 
     // Friend function for CAN interrupt handler
     friend void CumminsBusSniff(const CAN_message_t& _msg);
@@ -141,15 +124,15 @@ private:
     static void processDTCMessages();
 
     // General CAN message buffer
-    static const size_t CAN_BUFFER_SIZE = 128; // Larger than DTC buffer
-    static CANBufferMessage canBuffer[CAN_BUFFER_SIZE];
-    static volatile size_t canBufferHead;
-    static volatile size_t canBufferTail;
+    static const uint8_t CAN_BUFFER_SIZE = 255; // Larger than DTC buffer
+    static CAN_message_t canBuffer[CAN_BUFFER_SIZE];
+    static volatile uint8_t canBufferHead;
+    static volatile uint8_t canBufferTail;
     static volatile bool canBufferFull;
 
     // CAN buffer methods
     static bool addToCANBuffer(const CAN_message_t& msg);
-    static bool getFromCANBuffer(CANBufferMessage& message);
+    static bool getFromCANBuffer(CAN_message_t& message);
     static void processCANMessages();
     static bool requestPgnWithTimeout(uint32_t pgn, unsigned long timeoutMs);
 };

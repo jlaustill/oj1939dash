@@ -31,18 +31,18 @@ void Nextion::sendBatch()
 {
   if (batchCmdBuffer.length() > 0)
   {
-    Serial3.print(batchCmdBuffer);
+    Serial2.print(batchCmdBuffer);
     batchCmdBuffer = "";
   }
 }
 
 bool Nextion::initialize()
 {
-  Serial3.begin(115200);
+  Serial2.begin(115200);
 
-  // Wait for Serial3 with timeout
-  unsigned long startTime = millis();
-  while (!Serial3)
+  // Wait for Serial2 with timeout
+  const unsigned long startTime = millis();
+  while (!Serial2)
   {
     if (millis() - startTime > INIT_TIMEOUT)
     {
@@ -58,9 +58,9 @@ bool Nextion::initialize()
   delay(100); // Give display time to process
 
   // Flush any existing data in the incoming buffer
-  while (Serial3.available())
+  while (Serial2.available())
   {
-    Serial3.read();
+    Serial2.read();
   }
 
   return true;
@@ -75,7 +75,7 @@ String formatNumber(const double number)
   snprintf(buffer, sizeof(buffer), "%.2f", number);
 
   int numDigits = 0;
-  size_t periodIndex = strcspn(buffer, "."); // Find the position of the decimal point
+  const size_t periodIndex = strcspn(buffer, "."); // Find the position of the decimal point
 
   for (size_t i = 0; i < periodIndex; i++)
   {
@@ -92,10 +92,9 @@ String formatNumber(const double number)
     finalText += buffer[i];
 
     // Decrease the distance from the decimal point
-    size_t distance = numDigits - i - 1;
 
     // Insert a comma every three decimal positions away from the decimal point
-    if ((distance > 0) && (distance % 3 == 0))
+    if (const size_t distance = numDigits - i - 1; distance > 0 && distance % 3 == 0)
     {
       finalText += ',';
     }
@@ -107,9 +106,9 @@ String formatNumber(const double number)
   return finalText;
 }
 
-void Nextion::updateDisplayData(AppData* currentData)
+void Nextion::updateDisplayData(const AppData* currentData)
 {
-  unsigned long currentMillis = millis();
+  const unsigned long currentMillis = millis();
 
   // Update the display every 100ms
   if (currentMillis - last100msUpdate >= 100)
@@ -124,9 +123,13 @@ void Nextion::updateDisplayData(AppData* currentData)
     sendCmd("throttle.val=" + static_cast<String>(currentData->throttlePercentage));
     sendCmd("selGear.val=" + static_cast<String>(currentData->selectedGear));
     sendCmd("curGear.val=" + static_cast<String>(currentData->currentGear));
-    sendCmd("reqRange.txt=\"" + static_cast<String>(currentData->requestedRange) + "\"");
-    sendCmd("load.val=" + static_cast<String>(currentData->load));
+    const String reqRangeText = "reqRange.txt=\"" + static_cast<String>(currentData->requestedRange) + "\"";
+    sendCmd(reqRangeText);
+    const String loadCommand = "load.val=" + static_cast<String>(currentData->load);
+    sendCmd(loadCommand);
     sendCmd("fuelPres.val=" + static_cast<String>(static_cast<int>(currentData->fuelPressure)));
+    const String egtText = "egt.val=" + static_cast<String>(static_cast<int>(currentData->egt));
+    sendCmd(egtText);
 
     sendBatch();
     last100msUpdate = currentMillis;
@@ -137,7 +140,30 @@ void Nextion::updateDisplayData(AppData* currentData)
   {
     sendCmd("odometer.txt=\"" + formatNumber(currentData->odometer) + "\"");
     sendCmd("tripA.txt=\"" + formatNumber(currentData->tripA) + "\"");
-    // ... other 1s updates ...
+    sendCmd("tripB.txt=\"" + formatNumber(currentData->tripB) + "\"");
+    sendCmd("oc.txt=\"" + formatNumber(currentData->oilChange) + "\"");
+    sendCmd("tfc.txt=\"" +
+      formatNumber(currentData->transmissionFluidChange) + "\"");
+    sendCmd("tcfc.txt=\"" +
+      formatNumber(currentData->transferCaseFluidChange) + "\"");
+    sendCmd("fdfc.txt=\"" +
+      formatNumber(currentData->frontDifferentialFluidChange) + "\"");
+    sendCmd("rdfc.txt=\"" +
+      formatNumber(currentData->rearDifferentialFluidChange) + "\"");
+    sendCmd("ffc.txt=\"" + formatNumber(currentData->fuelFilterChange) +
+      "\"");
+    sendCmd("tr.txt=\"" + formatNumber(currentData->tireRotation) + "\"");
+    const double coolTempF = (static_cast<double>(currentData->coolantTemp) * 9 / 5) + 32;
+    sendCmd("h20t.val=" + static_cast<String>(static_cast<int>(coolTempF)));
+    const double coolTemp2F = (static_cast<double>(currentData->coolantTemp2) * 9 / 5) + 32;
+    sendCmd("h20t2.val=" + static_cast<String>(static_cast<int>(coolTemp2F)));
+    const double oilTempF = (static_cast<double>(currentData->oilTempC) * 9 / 5) + 32;
+    sendCmd("ot.val=" + static_cast<String>(static_cast<int>(oilTempF)));
+    sendCmd("fueltmp.val=" + static_cast<String>(currentData->fuelTempF));
+    const double transmissionTemperateDegrees =
+      static_cast<double>(currentData->transmissionTempC) * 9 / 5 + 32;
+    sendCmd("trantemp.val=" + static_cast<String>(static_cast<int>(transmissionTemperateDegrees)));
+    sendCmd("oilPres.val=" + static_cast<String>(static_cast<int>(currentData->oilPressureInPsi)));
 
     // Send batch commands
     sendBatch();
@@ -146,10 +172,10 @@ void Nextion::updateDisplayData(AppData* currentData)
 
   // Process incoming commands with a limit on how long we spend doing this
   // to avoid getting stuck in command processing
-  const unsigned long processStartTime = millis();
-  constexpr unsigned long MAX_PROCESS_TIME = 50; // max 50ms processing commands
+  // const unsigned long processStartTime = millis();
+  // constexpr unsigned long MAX_PROCESS_TIME = 50; // max 50ms processing commands
 
-  processCommands(currentData, processStartTime, MAX_PROCESS_TIME);
+  // processCommands(currentData, processStartTime, MAX_PROCESS_TIME);
 }
 
 void Nextion::processCommands(AppData* currentData, const unsigned long startTime, unsigned long maxTime)
@@ -157,9 +183,9 @@ void Nextion::processCommands(AppData* currentData, const unsigned long startTim
   static String serialBuffer = "";
 
   // Process commands with time limit
-  while (Serial3.available() && (millis() - startTime < maxTime))
+  while (Serial2.available() && millis() - startTime < maxTime)
   {
-    const int newData = Serial3.read();
+    const int newData = Serial2.read();
 
     // Check for buffer overflow
     if (serialBuffer.length() >= MAX_SERIAL_BUFFER_SIZE)

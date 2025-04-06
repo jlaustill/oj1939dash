@@ -19,20 +19,20 @@ std::unordered_set<uint8_t> J1939Bus::sourceAddresses;
 uint32_t J1939Bus::lastJ1939Request = 0;
 uint32_t J1939Bus::currentMillis = 0;
 AppData* J1939Bus::appData = nullptr;
-J1939Message J1939Bus::ElectronicTransmissionController1Pgn{};
 
 // Initialize CAN message containers
 volatile CanMessage J1939Bus::pgn65262 = {0x67, 0x8, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, 0};
-volatile CanMessage J1939Bus::pgn65262_149{};
-volatile CanMessage J1939Bus::pgn65263{};
-volatile CanMessage J1939Bus::pgn65263_149{};
-volatile CanMessage J1939Bus::pgn65272{};
-volatile CanMessage J1939Bus::pgn65129{};
-volatile CanMessage J1939Bus::pgn61445{};
-volatile CanMessage J1939Bus::message256{};
-volatile CanMessage J1939Bus::message274{};
+volatile CanMessage J1939Bus::pgn65262_149{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65263{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65263_149{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65272{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn65129{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn61442{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::pgn61445{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::message256{0x00, 0x8, {}, 0};
+volatile CanMessage J1939Bus::message274{0x00, 0x8, {}, 0};
 volatile CanMessage J1939Bus::pgn61443 = {0x67, 0x8, {0xF1, 0x0, 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 0};
-volatile CanMessage J1939Bus::pgn65270{};
+volatile CanMessage J1939Bus::pgn65270{0x00, 0x8, {}, 0};
 CAN_message_t J1939Bus::msg;
 
 // Initialize sensor data
@@ -42,18 +42,11 @@ volatile double J1939Bus::oilPressure = 0;
 volatile double J1939Bus::waterTemp = 0;
 volatile byte J1939Bus::load = 0;
 volatile byte J1939Bus::throttlePercentage = 0;
-volatile float J1939Bus::Timing = 0;
 volatile float J1939Bus::FuelPercentage = 0;
 
 // Initialize fuel pressure tracking
 volatile float J1939Bus::minFuelPressure = 99999999.0;
 volatile float J1939Bus::maxFuelPressure = 0.0;
-
-// Initialize timing data
-volatile float J1939Bus::maxTiming = 15.0f;
-volatile int J1939Bus::maxOfThrottleAndLoad = 0;
-volatile float J1939Bus::newTiming = 15.0f;
-volatile unsigned short J1939Bus::shortTimingValue = 0;
 
 // Initialize ID tracking
 volatile int J1939Bus::ids[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -69,21 +62,24 @@ volatile size_t J1939Bus::dtcBufferTail = 0;
 volatile bool J1939Bus::dtcBufferFull = false;
 
 // Initialize the CAN buffer variables
-CANBufferMessage J1939Bus::canBuffer[CAN_BUFFER_SIZE] = {};
-volatile size_t J1939Bus::canBufferHead = 0;
-volatile size_t J1939Bus::canBufferTail = 0;
+CAN_message_t J1939Bus::canBuffer[CAN_BUFFER_SIZE] = {};
+volatile uint8_t J1939Bus::canBufferHead = 0;
+volatile uint8_t J1939Bus::canBufferTail = 0;
 volatile bool J1939Bus::canBufferFull = false;
 
 // Add a method to safely add a message to the buffer
-bool J1939Bus::addToDTCBuffer(const J1939Message& message) {
-    if (dtcBufferFull) {
+bool J1939Bus::addToDTCBuffer(const J1939Message& message)
+{
+    if (dtcBufferFull)
+    {
         return false; // Buffer is full, can't add
     }
 
     // Copy message data to the buffer
     dtcBuffer[dtcBufferHead].canId = message.canId;
     dtcBuffer[dtcBufferHead].sourceAddress = message.sourceAddress;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++)
+    {
         dtcBuffer[dtcBufferHead].data[i] = message.data[i];
     }
     dtcBuffer[dtcBufferHead].valid = true;
@@ -99,8 +95,10 @@ bool J1939Bus::addToDTCBuffer(const J1939Message& message) {
 }
 
 // Add a method to safely get a message from the buffer
-bool J1939Bus::getFromDTCBuffer(DTCMessage& message) {
-    if (dtcBufferHead == dtcBufferTail && !dtcBufferFull) {
+bool J1939Bus::getFromDTCBuffer(DTCMessage& message)
+{
+    if (dtcBufferHead == dtcBufferTail && !dtcBufferFull)
+    {
         return false; // Buffer is empty
     }
 
@@ -118,13 +116,16 @@ bool J1939Bus::getFromDTCBuffer(DTCMessage& message) {
 }
 
 // Add a method to process DTC messages in the main loop
-void J1939Bus::processDTCMessages() {
+void J1939Bus::processDTCMessages()
+{
     DTCMessage message;
 
     // Process up to 5 messages per loop iteration to avoid blocking too long
     int processCount = 0;
-    while (getFromDTCBuffer(message) && processCount < 5) {
-        if (message.valid) {
+    while (getFromDTCBuffer(message) && processCount < 5)
+    {
+        if (message.valid)
+        {
             // Process the DTC message - this is the code moved from the interrupt handler
             const uint8_t mil = SeaDash::Bits::getNBits(message.data[0], 6, 2);
             const uint8_t rsl = SeaDash::Bits::getNBits(message.data[0], 4, 2);
@@ -163,21 +164,19 @@ void J1939Bus::processDTCMessages() {
 }
 
 // Add messages to the CAN buffer
-bool J1939Bus::addToCANBuffer(const CAN_message_t& msg) {
-    if (canBufferFull) {
+bool J1939Bus::addToCANBuffer(const CAN_message_t& msg)
+{
+    if (canBufferFull)
+    {
+        Serial.println("Buffer full");
         return false; // Buffer is full, can't add
     }
 
     // Copy message data to the buffer
-    canBuffer[canBufferHead].canId = msg.id;
-    canBuffer[canBufferHead].len = msg.len;
-    for (int i = 0; i < 8; i++) {
-        canBuffer[canBufferHead].buf[i] = msg.buf[i];
-    }
-    canBuffer[canBufferHead].valid = true;
+    canBuffer[canBufferHead] = msg;
 
     // Move head pointer
-    size_t nextHead = (canBufferHead + 1) % CAN_BUFFER_SIZE;
+    const uint8_t nextHead = (canBufferHead + 1) % CAN_BUFFER_SIZE;
     canBufferHead = nextHead;
 
     // Check if buffer is full
@@ -187,14 +186,15 @@ bool J1939Bus::addToCANBuffer(const CAN_message_t& msg) {
 }
 
 // Get messages from the CAN buffer
-bool J1939Bus::getFromCANBuffer(CANBufferMessage& message) {
-    if (canBufferHead == canBufferTail && !canBufferFull) {
+bool J1939Bus::getFromCANBuffer(CAN_message_t& message)
+{
+    if (canBufferHead == canBufferTail && !canBufferFull)
+    {
         return false; // Buffer is empty
     }
 
     // Copy data from buffer to output message
     message = canBuffer[canBufferTail];
-    canBuffer[canBufferTail].valid = false; // Mark as read
 
     // Move tail pointer
     canBufferTail = (canBufferTail + 1) % CAN_BUFFER_SIZE;
@@ -203,12 +203,6 @@ bool J1939Bus::getFromCANBuffer(CANBufferMessage& message) {
     canBufferFull = false;
 
     return true;
-}
-
-void J1939Bus::updateJ1939Message(J1939Message* _messageToUpdate, const CAN_message_t& _msg)
-{
-    _messageToUpdate->setCanId(_msg.id);
-    _messageToUpdate->setData(_msg.buf);
 }
 
 void J1939Bus::updateMessage(volatile CanMessage* _messageToUpdate, const CAN_message_t& _msg)
@@ -224,6 +218,7 @@ void J1939Bus::updateMessage(volatile CanMessage* _messageToUpdate, const CAN_me
     _messageToUpdate->data[6] = _msg.buf[6];
     _messageToUpdate->data[7] = _msg.buf[7];
     _messageToUpdate->count++;
+    _messageToUpdate->lastMessageReceived = millis();
 }
 
 void J1939Bus::requestPgn(const uint32_t pgn)
@@ -251,23 +246,18 @@ void CumminsBusSniff(const CAN_message_t& _msg)
     J1939Bus::addToCANBuffer(_msg);
 }
 
-void J1939Bus::updateTiming()
-{
-    // compute timing advance
-    Timing = static_cast<float>(message256.data[5] << 8 | message256.data[4]); // convert from little endian
-    Timing = Timing / 128.0f;
-}
-
-float J1939Bus::getCurrentTiming()
-{
-    updateTiming();
-    return Timing;
-}
-
 float J1939Bus::getCurrentFuelPressurePsi()
 {
+    if (pgn65263_149.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65263_149.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     auto fuelPressure = static_cast<float>(pgn65263_149.data[0] * 4);
-    fuelPressure /= 6.895;
+    fuelPressure /= 6.895f;
     if (fuelPressure > maxFuelPressure) maxFuelPressure = fuelPressure;
     if (fuelPressure < minFuelPressure) minFuelPressure = fuelPressure;
     return fuelPressure;
@@ -275,21 +265,47 @@ float J1939Bus::getCurrentFuelPressurePsi()
 
 byte J1939Bus::getTransmissionTempC()
 {
-    const std::uint16_t tempRaw = pgn65272.data[5] << 8 | pgn65272.data[4];
+    if (pgn65272.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65272.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
+    const uint16_t tempRaw = SeaDash::Bytes::combine2Bytes(pgn65272.data[5], pgn65272.data[4]);
     const float transmissionTemp = static_cast<float>(tempRaw) * 0.03125f - 273.15f;
     return static_cast<byte>(transmissionTemp);
 }
 
 float J1939Bus::getCurrentFuelPercentage()
 {
+    if (message256.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - message256.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Fuel compute
-    FuelPercentage = static_cast<float>((message256.data[1] << 8) | message256.data[0]);
+    FuelPercentage = static_cast<float>(SeaDash::Bytes::combine2Bytes(message256.data[1], message256.data[0]));
     FuelPercentage = FuelPercentage * 100.0f / 4096.0f; // 4095 is max fuel allowed by pump
     return FuelPercentage;
 }
 
 void J1939Bus::updateThrottlePercentage()
 {
+    if (pgn61443.count == 0)
+    {
+        throttlePercentage = 0;
+        return;
+    }
+    if (millis() - pgn61443.lastMessageReceived > 1000)
+    {
+        throttlePercentage = 0;
+        return;
+    }
     throttlePercentage = static_cast<byte>(static_cast<float>(pgn61443.data[1]) * .4f);
 }
 
@@ -301,6 +317,16 @@ int J1939Bus::getCurrentThrottlePercentage()
 
 void J1939Bus::updateLoad()
 {
+    if (pgn61443.count == 0)
+    {
+        load = 0;
+        return;
+    }
+    if (millis() - pgn61443.lastMessageReceived > 1000)
+    {
+        load = 0;
+        return;
+    }
     load = static_cast<byte>(static_cast<float>(pgn61443.data[2]) * 0.8f);
 }
 
@@ -312,7 +338,17 @@ int J1939Bus::getCurrentLoad()
 
 void J1939Bus::updateRpms()
 {
-    RPM = message256.data[7] << 8 | message256.data[6]; // convert from little endian
+    if (message256.count == 0)
+    {
+        RPM = 0;
+        return;
+    }
+    if (millis() - message256.lastMessageReceived > 1000)
+    {
+        RPM = 0;
+        return;
+    }
+    RPM = SeaDash::Bytes::combine2Bytes(message256.data[7], message256.data[6]); // convert from little endian
     RPM /= 4;
 }
 
@@ -322,13 +358,16 @@ int J1939Bus::getCurrentRpms()
     return static_cast<int>(RPM);
 }
 
-float J1939Bus::getCurrentAMT()
-{
-    return static_cast<float>(pgn65270.data[2]) - 40.0f;
-}
-
 float J1939Bus::getCurrentBoostInPsi()
 {
+    if (pgn65270.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65270.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     const float kpa = static_cast<float>(pgn65270.data[1]) * 2.0f;
     const float psi = static_cast<float>(kpa) / 6.895f;
     return psi;
@@ -336,17 +375,33 @@ float J1939Bus::getCurrentBoostInPsi()
 
 float J1939Bus::getCurrentBoostTemp()
 {
+    if (pgn65129.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65129.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Boost Temperature
-    auto boostTemp = static_cast<float>(pgn65129.data[0] << 8 | pgn65129.data[1]); // Raw
+    auto boostTemp = static_cast<float>(SeaDash::Bytes::combine2Bytes(pgn65129.data[0], pgn65129.data[1])); // Raw
     boostTemp = boostTemp * 0.03125f; // Offset
     boostTemp = boostTemp - 273.0f; // Celsius
-    boostTemp = ((boostTemp * 9) / 5) + 32; // Fahrenheit
+    boostTemp = boostTemp * 9.0f / 5.0f + 32.0f; // Fahrenheit
 
     return boostTemp;
 }
 
 float J1939Bus::getCurrentEgtTemp()
 {
+    if (pgn65270.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65270.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     auto egt = static_cast<float>(pgn65270.data[5] * 255);
     egt += static_cast<float>(pgn65270.data[6]);
     egt *= 0.03125f;
@@ -357,12 +412,28 @@ float J1939Bus::getCurrentEgtTemp()
 
 int J1939Bus::getCurrentWaterTemp()
 {
+    if (pgn65262.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65262.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     waterTemp = pgn65262.data[0] - 40;
     return static_cast<int>(waterTemp);
 }
 
 byte J1939Bus::getCurrentOilPressure()
 {
+    if (pgn65263.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn65263.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Oil Pressure
     oilPressure = pgn65263.data[3] * 4 / 6.895; // Confirmed!!!
     return static_cast<byte>(oilPressure);
@@ -370,8 +441,16 @@ byte J1939Bus::getCurrentOilPressure()
 
 int J1939Bus::getCurrentFuelTemp()
 {
+    if (message274.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - message274.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Fuel Temperature
-    fuelTemp = (message274.data[7] << 8) | message274.data[6]; // Raw
+    fuelTemp = SeaDash::Bytes::combine2Bytes(message274.data[7], message274.data[6]); // Raw
     fuelTemp = fuelTemp / 16; // Kelvin
     fuelTemp = fuelTemp - 273.15; // Celsius
     fuelTemp = ((fuelTemp * 9) / 5) + 32; // Fahrenheit
@@ -381,109 +460,150 @@ int J1939Bus::getCurrentFuelTemp()
 
 char J1939Bus::getRequestedRange()
 {
-    return static_cast<char>(pgn61445.data[4]);
+    if (pgn61445.count > 0 && millis() - pgn61445.lastMessageReceived < 1000)
+    {
+        return static_cast<char>(pgn61445.data[4]);
+    }
+
+    return 'P';
 }
 
 int8_t J1939Bus::getCurrentGear()
 {
-    return static_cast<int8_t>(pgn61445.data[3] - 125);
+    if (pgn61445.count > 0 && millis() - pgn61445.lastMessageReceived < 1000)
+    {
+        return static_cast<int8_t>(pgn61445.data[3] - 125);
+    }
+
+    return 0;
 }
 
 int8_t J1939Bus::getSelectedGear()
 {
-    return static_cast<int8_t>(pgn61445.data[0] - 125);
+    if (pgn61445.count > 0 && millis() - pgn61445.lastMessageReceived < 1000)
+    {
+        return static_cast<int8_t>(pgn61445.data[0] - 125);
+    }
+    return 0;
 }
 
-void J1939Bus::processCANMessages() {
-    CANBufferMessage message;
+void J1939Bus::processCANMessages()
+{
+    CAN_message_t message;
 
     // Process up to 10 messages per loop iteration to avoid blocking too long
     int processCount = 0;
-    while (getFromCANBuffer(message) && processCount < 10) {
-        if (message.valid) {
-            // Convert to J1939Message for processing
-            J1939Message j1939Msg;
-            j1939Msg.setCanId(message.canId);
-            j1939Msg.setData(message.buf);
+    while (getFromCANBuffer(message) && processCount < 10)
+    {
+        // Convert to J1939Message for processing
+        J1939Message j1939Msg;
+        j1939Msg.setCanId(message.id);
+        j1939Msg.setData(message.buf);
 
-            // Process based on ID first
-            if (message.canId == 256) {
-                CAN_message_t tempMsg;
-                tempMsg.id = message.canId;
-                tempMsg.len = message.len;
-                for (int i = 0; i < 8; i++) {
-                    tempMsg.buf[i] = message.buf[i];
+        // Process based on ID first
+        if (message.id == 256)
+        {
+            updateMessage(&message256, message);
+        }
+        else if (message.id == 274)
+        {
+            updateMessage(&message274, message);
+        }
+        else if (message.id == 1280 || message.id == 1298)
+        {
+        }
+        // Process based on PGN second
+        else
+        {
+            switch (j1939Msg.pgn)
+            {
+            case 61443:
+                updateMessage(&pgn61443, message);
+                break;
+
+            case 65129:
+                updateMessage(&pgn65129, message);
+                break;
+
+            case ENGINE_TEMP_1_PGN:
+                if (j1939Msg.sourceAddress == 149)
+                {
+                    updateMessage(&pgn65262_149, message);
                 }
-                updateMessage(&message256, tempMsg);
-            }
-            else if (message.canId == 274) {
-                CAN_message_t tempMsg;
-                tempMsg.id = message.canId;
-                tempMsg.len = message.len;
-                for (int i = 0; i < 8; i++) {
-                    tempMsg.buf[i] = message.buf[i];
+                else
+                {
+                    updateMessage(&pgn65262, message);
                 }
-                updateMessage(&message274, tempMsg);
-            }
-            // Process based on PGN second
-            else {
-                switch (j1939Msg.pgn) {
-                case 61443:
-                    {
-                        CAN_message_t tempMsg;
-                        tempMsg.id = message.canId;
-                        tempMsg.len = message.len;
-                        for (int i = 0; i < 8; i++) {
-                            tempMsg.buf[i] = message.buf[i];
-                        }
-                        updateMessage(&pgn61443, tempMsg);
-                    }
-                    break;
+                break;
 
-                case 65129:
-                    {
-                        CAN_message_t tempMsg;
-                        tempMsg.id = message.canId;
-                        tempMsg.len = message.len;
-                        for (int i = 0; i < 8; i++) {
-                            tempMsg.buf[i] = message.buf[i];
-                        }
-                        updateMessage(&pgn65129, tempMsg);
-                    }
-                    break;
-
-                case ENGINE_TEMP_1_PGN:
-                    {
-                        CAN_message_t tempMsg;
-                        tempMsg.id = message.canId;
-                        tempMsg.len = message.len;
-                        for (int i = 0; i < 8; i++) {
-                            tempMsg.buf[i] = message.buf[i];
-                        }
-                        if (j1939Msg.sourceAddress == 149) {
-                            updateMessage(&pgn65262_149, tempMsg);
-                        } else {
-                            updateMessage(&pgn65262, tempMsg);
-                        }
-                    }
-                    break;
-
-                // Continue with other cases...
-
-                case DM1_DTCS_PGN:
-                    // Add to DTC buffer for detailed processing
-                    addToDTCBuffer(j1939Msg);
-                    break;
-
-                default:
-                    // Add to ID tracking
-                    if (idsP < 8) {
-                        ids[idsP] = static_cast<int>(message.canId);
-                    }
-                    idsP = (idsP + 1) % 8;
-                    break;
+            case 65263:
+                // PGN: 65263
+                if (j1939Msg.sourceAddress == 149)
+                {
+                    updateMessage(&pgn65263_149, message);
                 }
+                else
+                {
+                    updateMessage(&pgn65263, message);
+                }
+                break;
+            case 65270:
+                if (j1939Msg.sourceAddress == 149)
+                {
+                    updateMessage(&pgn65270, message);
+                }
+                break;
+
+            case 65272:
+                // Transmission Fluids
+                updateMessage(&pgn65272, message);
+                break;
+
+            case 61440:
+            case 61452:
+            case 65264:
+            case 65098:
+            case 65504:
+            case 65265:
+            case 65247:
+            case 60415:
+            case 65252:
+            case 65269:
+            case 65271:
+            case 65099:
+            case 59443:
+            case 65266:
+            case 60671:
+            case 61444:
+                break;
+
+            case 61445:
+                // Serial.println("Got 61445");
+                updateMessage(&pgn61445, message);
+                break;
+            case 61442:
+                updateMessage(&pgn61442, message);
+                break;
+
+            case DM1_DTCS_PGN:
+                // Add to DTC buffer for detailed processing
+                addToDTCBuffer(j1939Msg);
+                break;
+
+            default:
+                Serial.print("Unknown PGN: ");
+                Serial.print(j1939Msg.pgn);
+                Serial.print(" ID: ");
+                Serial.println(j1939Msg.canId);
+            // Add to ID tracking
+                if (idsP < 8)
+                {
+                    ids[idsP] = static_cast<int>(message.id);
+                }
+                idsP = (idsP + 1) % 8;
+                break;
             }
+
 
             processCount++;
         }
@@ -504,27 +624,33 @@ bool J1939Bus::initialize(AppData* _appData)
     Can1.onReceive(CumminsBusSniff);
 
     // Give the CAN controller a moment to initialize
-    unsigned long startTime = millis();
+    const unsigned long startTime = millis();
     bool canInitialized = false;
 
     // Try sending a dummy message to see if CAN is ready
-    while (!canInitialized && (millis() - startTime < 2000)) { // 2 second timeout
+    while (!canInitialized && (millis() - startTime < 2000))
+    {
+        // 2 second timeout
         // Set up a test message
         CAN_message_t testMsg;
         testMsg.flags.extended = true;
-        testMsg.id = 0x18EAFFF9;  // A standard J1939 address that should be safe
+        testMsg.id = 0x18EAFFF9; // A standard J1939 address that should be safe
         testMsg.len = 8;
-        for (int i = 0; i < 8; i++) testMsg.buf[i] = 0;
+        for (unsigned char& i : testMsg.buf) i = 0;
 
         // Try to send it
-        if (Can1.write(testMsg)) {
+        if (Can1.write(testMsg))
+        {
             canInitialized = true;
-        } else {
-            delay(100);  // Wait a bit before trying again
+        }
+        else
+        {
+            delay(100); // Wait a bit before trying again
         }
     }
 
-    if (!canInitialized) {
+    if (!canInitialized)
+    {
         Serial.println("CAN initialization timeout");
         return false;
     }
@@ -532,11 +658,13 @@ bool J1939Bus::initialize(AppData* _appData)
     Can1.mailboxStatus();
 
     // pgn to request water temp pgn :)
-    if (!requestPgnWithTimeout(ENGINE_TEMP_1_PGN, 500)) {
+    if (!requestPgnWithTimeout(ENGINE_TEMP_1_PGN, 500))
+    {
         Serial.println("Warning: Initial ENGINE_TEMP_1_PGN request failed");
     }
 
-    if (!requestPgnWithTimeout(DM1_DTCS_PGN, 500)) {
+    if (!requestPgnWithTimeout(DM1_DTCS_PGN, 500))
+    {
         Serial.println("Warning: Initial DM1_DTCS_PGN request failed");
     }
 
@@ -558,9 +686,11 @@ bool J1939Bus::requestPgnWithTimeout(const uint32_t pgn, const unsigned long tim
     msg.buf[1] = SeaDash::Bytes::getNthByte(pgn, 2);
     msg.buf[2] = SeaDash::Bytes::getNthByte(pgn, 3);
 
-    unsigned long startTime = millis();
-    while (!Can1.write(msg)) {
-        if (millis() - startTime > timeoutMs) {
+    const unsigned long startTime = millis();
+    while (!Can1.write(msg))
+    {
+        if (millis() - startTime > timeoutMs)
+        {
             return false; // Timeout occurred
         }
         delay(1);
@@ -593,14 +723,20 @@ void J1939Bus::loop()
 
 byte J1939Bus::getVehicleSpeed()
 {
+    if (pgn61442.count == 0)
+    {
+        return 0;
+    }
+    if (millis() - pgn61442.lastMessageReceived > 1000)
+    {
+        return 0;
+    }
     // Compute Vehicle Speed
-    const uint32_t speedRaw =
-        ElectronicTransmissionController1Pgn.data[2] << 8 |
-        ElectronicTransmissionController1Pgn.data[1];
+    const uint32_t speedRaw = SeaDash::Bytes::combine2Bytes(pgn61442.data[2], pgn61442.data[1]);
     const auto outputShaftRpm = static_cast<float>(speedRaw) * .125f;
     const float wheelRpm = outputShaftRpm / 3.73f;
     const float inchesPerMinute = wheelRpm * 100.11f;
-    const float milesPerHour = inchesPerMinute * 60 / 63360;
+    const float milesPerHour = inchesPerMinute * 60.0f / 63360.0f;
 
     speedAverage.addValue(static_cast<byte>(milesPerHour));
 
