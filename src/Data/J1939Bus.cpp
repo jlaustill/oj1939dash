@@ -205,12 +205,6 @@ bool J1939Bus::getFromCANBuffer(CAN_message_t& message)
     return true;
 }
 
-void J1939Bus::updateJ1939Message(J1939Message* _messageToUpdate, const CAN_message_t& _msg)
-{
-    _messageToUpdate->setCanId(_msg.id);
-    _messageToUpdate->setData(_msg.buf);
-}
-
 void J1939Bus::updateMessage(volatile CanMessage* _messageToUpdate, const CAN_message_t& _msg)
 {
     _messageToUpdate->id = _msg.id;
@@ -466,41 +460,31 @@ int J1939Bus::getCurrentFuelTemp()
 
 char J1939Bus::getRequestedRange()
 {
-    if (pgn61445.count == 0)
+    if (pgn61445.count > 0 && millis() - pgn61445.lastMessageReceived < 1000)
     {
-        return 'P';
+        return static_cast<char>(pgn61445.data[4]);
     }
-    if (millis() - pgn61445.lastMessageReceived > 1000)
-    {
-        return 'P';
-    }
-    return static_cast<char>(pgn61445.data[4]);
+
+    return 'P';
 }
 
 int8_t J1939Bus::getCurrentGear()
 {
-    if (pgn61445.count == 0)
+    if (pgn61445.count > 0 && millis() - pgn61445.lastMessageReceived < 1000)
     {
-        return 0;
+        return static_cast<int8_t>(pgn61445.data[3] - 125);
     }
-    if (millis() - pgn61445.lastMessageReceived > 1000)
-    {
-        return 0;
-    }
-    return static_cast<int8_t>(pgn61445.data[3] - 125);
+
+    return 0;
 }
 
 int8_t J1939Bus::getSelectedGear()
 {
-    if (pgn61445.count == 0)
+    if (pgn61445.count > 0 && millis() - pgn61445.lastMessageReceived < 1000)
     {
-        return 0;
+        return static_cast<int8_t>(pgn61445.data[0] - 125);
     }
-    if (millis() - pgn61445.lastMessageReceived > 1000)
-    {
-        return 0;
-    }
-    return static_cast<int8_t>(pgn61445.data[0] - 125);
+    return 0;
 }
 
 void J1939Bus::processCANMessages()
@@ -525,33 +509,30 @@ void J1939Bus::processCANMessages()
         {
             updateMessage(&message274, message);
         }
+        else if (message.id == 1280 || message.id == 1298)
+        {
+        }
         // Process based on PGN second
         else
         {
             switch (j1939Msg.pgn)
             {
             case 61443:
-                {
-                    updateMessage(&pgn61443, message);
-                }
+                updateMessage(&pgn61443, message);
                 break;
 
             case 65129:
-                {
-                    updateMessage(&pgn65129, message);
-                }
+                updateMessage(&pgn65129, message);
                 break;
 
             case ENGINE_TEMP_1_PGN:
+                if (j1939Msg.sourceAddress == 149)
                 {
-                    if (j1939Msg.sourceAddress == 149)
-                    {
-                        updateMessage(&pgn65262_149, message);
-                    }
-                    else
-                    {
-                        updateMessage(&pgn65262, message);
-                    }
+                    updateMessage(&pgn65262_149, message);
+                }
+                else
+                {
+                    updateMessage(&pgn65262, message);
                 }
                 break;
 
@@ -559,11 +540,18 @@ void J1939Bus::processCANMessages()
                 // PGN: 65263
                 if (j1939Msg.sourceAddress == 149)
                 {
+                    updateMessage(&pgn65263_149, message);
+                }
+                else
+                {
                     updateMessage(&pgn65263, message);
                 }
                 break;
             case 65270:
-                updateMessage(&pgn65270, message);
+                if (j1939Msg.sourceAddress == 149)
+                {
+                    updateMessage(&pgn65270, message);
+                }
                 break;
 
             case 65272:
@@ -571,11 +559,30 @@ void J1939Bus::processCANMessages()
                 updateMessage(&pgn65272, message);
                 break;
 
+            case 61440:
+            case 61452:
+            case 65264:
+            case 65098:
+            case 65504:
+            case 65265:
+            case 65247:
+            case 60415:
+            case 65252:
+            case 65269:
+            case 65271:
+            case 65099:
+            case 59443:
+            case 65266:
+            case 60671:
+            case 61444:
+                break;
+
             case 61445:
-                updateMessage(&pgn61445, msg);
+                // Serial.println("Got 61445");
+                updateMessage(&pgn61445, message);
                 break;
             case 61442:
-                updateMessage(&pgn61442, msg);
+                updateMessage(&pgn61442, message);
                 break;
 
             case DM1_DTCS_PGN:
@@ -584,7 +591,11 @@ void J1939Bus::processCANMessages()
                 break;
 
             default:
-                // Add to ID tracking
+                Serial.print("Unknown PGN: ");
+                Serial.print(j1939Msg.pgn);
+                Serial.print(" ID: ");
+                Serial.println(j1939Msg.canId);
+            // Add to ID tracking
                 if (idsP < 8)
                 {
                     ids[idsP] = static_cast<int>(message.id);
